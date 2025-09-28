@@ -40,27 +40,27 @@ const Index = () => {
           const mockSongs: Song[] = [
             {
               id: "demo-song-1",
-              name: "Blinding Lights",
-              artist: "The Weeknd",
-              album: "After Hours", 
+              name: "Two Moons",
+              artist: "BoyWithUke",
+              album: "Serotonin Dreams", 
               image: demoAlbumCover,
               preview_url: "https://p.scdn.co/mp3-preview/demo", // Mock preview URL
               external_url: "https://open.spotify.com/track/demo1"
             },
             {
               id: "demo-song-2", 
-              name: "Watermelon Sugar",
-              artist: "Harry Styles",
-              album: "Fine Line",
+              name: "Two Moons",
+              artist: "BoyWithUke",
+              album: "Serotonin Dreams",
               image: demoAlbumCover,
               preview_url: null, // No preview
               external_url: "https://open.spotify.com/track/demo2"
             },
             {
               id: "demo-song-3",
-              name: "Good 4 U", 
-              artist: "Olivia Rodrigo",
-              album: "SOUR",
+              name: "Two Moons", 
+              artist: "BoyWithUke",
+              album: "Serotonin Dreams",
               image: demoAlbumCover,
               preview_url: "https://p.scdn.co/mp3-preview/demo2", // Mock preview URL
               external_url: "https://open.spotify.com/track/demo3"
