@@ -99,59 +99,73 @@ export class SpotifyService {
     }
   }
 
-  // Get random track from popular playlists
+  // Get random track from popular playlists with preview URL
   async getRandomTrack(): Promise<Song> {
     if (!this.accessToken) {
       await this.authenticate();
     }
 
-    try {
-      // Get featured playlists
-      const playlistsResponse = await fetch(
-        'https://api.spotify.com/v1/browse/featured-playlists?limit=10',
-        {
-          headers: {
-            'Authorization': `Bearer ${this.accessToken}`,
-          },
-        }
-      );
-
-      if (!playlistsResponse.ok) {
-        throw new Error('Failed to fetch playlists');
-      }
-
-      const playlistsData = await playlistsResponse.json();
-      const randomPlaylist = playlistsData.playlists.items[
-        Math.floor(Math.random() * playlistsData.playlists.items.length)
-      ];
-
-      // Get tracks from random playlist
-      const tracksResponse = await fetch(
-        `https://api.spotify.com/v1/playlists/${randomPlaylist.id}/tracks?limit=50`,
-        {
-          headers: {
-            'Authorization': `Bearer ${this.accessToken}`,
-          },
-        }
-      );
-
-      if (!tracksResponse.ok) {
-        throw new Error('Failed to fetch tracks');
-      }
-
-      const tracksData = await tracksResponse.json();
-      const tracks = tracksData.items.filter((item: any) => item.track && item.track.preview_url);
+    let attempts = 0;
+    const maxAttempts = 10;
+    
+    while (attempts < maxAttempts) {
+      attempts++;
       
-      if (tracks.length === 0) {
-        throw new Error('No playable tracks found');
-      }
+      try {
+        // Get featured playlists
+        const playlistsResponse = await fetch(
+          'https://api.spotify.com/v1/browse/featured-playlists?limit=20',
+          {
+            headers: {
+              'Authorization': `Bearer ${this.accessToken}`,
+            },
+          }
+        );
 
-      const randomTrack = tracks[Math.floor(Math.random() * tracks.length)];
-      return this.formatTrack(randomTrack.track);
-    } catch (error) {
-      console.error('Error getting random track:', error);
-      throw error;
+        if (!playlistsResponse.ok) {
+          throw new Error('Failed to fetch playlists');
+        }
+
+        const playlistsData = await playlistsResponse.json();
+        const randomPlaylist = playlistsData.playlists.items[
+          Math.floor(Math.random() * playlistsData.playlists.items.length)
+        ];
+
+        // Get tracks from random playlist
+        const tracksResponse = await fetch(
+          `https://api.spotify.com/v1/playlists/${randomPlaylist.id}/tracks?limit=50`,
+          {
+            headers: {
+              'Authorization': `Bearer ${this.accessToken}`,
+            },
+          }
+        );
+
+        if (!tracksResponse.ok) {
+          throw new Error('Failed to fetch tracks');
+        }
+
+        const tracksData = await tracksResponse.json();
+        // Filter tracks that have preview_url available
+        const tracksWithPreview = tracksData.items.filter((item: any) => 
+          item.track && item.track.preview_url !== null
+        );
+        
+        if (tracksWithPreview.length > 0) {
+          const randomTrack = tracksWithPreview[Math.floor(Math.random() * tracksWithPreview.length)];
+          const formattedTrack = this.formatTrack(randomTrack.track);
+          console.log(`Found track with preview on attempt ${attempts}:`, formattedTrack.name);
+          return formattedTrack;
+        } else {
+          console.log(`Attempt ${attempts}: No tracks with preview found in playlist "${randomPlaylist.name}", trying another...`);
+        }
+        
+      } catch (error) {
+        console.log(`Attempt ${attempts} failed:`, error);
+      }
     }
+    
+    throw new Error('No tracks with preview found after multiple attempts');
   }
 
   // Format track data to our Song interface

@@ -27,21 +27,77 @@ const Index = () => {
       setLoading(true);
       setError(null);
       
-      // For demo purposes, we'll use a mock song
-      // In production, this would call the Spotify API
-      const mockSong: Song = {
-        id: "demo-song",
-        name: "Blinding Lights",
-        artist: "The Weeknd",
-        album: "After Hours",
-        image: demoAlbumCover,
-        preview_url: null, // Would be actual preview URL from Spotify
-        external_url: "https://open.spotify.com/track/demo"
-      };
+      // Try to get a song with preview URL, retry if necessary
+      let attempts = 0;
+      const maxAttempts = 10;
+      let songWithPreview: Song | null = null;
       
-      setCurrentSong(mockSong);
+      while (attempts < maxAttempts && !songWithPreview) {
+        attempts++;
+        
+        try {
+          // For demo purposes, we'll use mock songs with different preview availability
+          const mockSongs: Song[] = [
+            {
+              id: "demo-song-1",
+              name: "Blinding Lights",
+              artist: "The Weeknd",
+              album: "After Hours", 
+              image: demoAlbumCover,
+              preview_url: "https://p.scdn.co/mp3-preview/demo", // Mock preview URL
+              external_url: "https://open.spotify.com/track/demo1"
+            },
+            {
+              id: "demo-song-2", 
+              name: "Watermelon Sugar",
+              artist: "Harry Styles",
+              album: "Fine Line",
+              image: demoAlbumCover,
+              preview_url: null, // No preview
+              external_url: "https://open.spotify.com/track/demo2"
+            },
+            {
+              id: "demo-song-3",
+              name: "Good 4 U", 
+              artist: "Olivia Rodrigo",
+              album: "SOUR",
+              image: demoAlbumCover,
+              preview_url: "https://p.scdn.co/mp3-preview/demo2", // Mock preview URL
+              external_url: "https://open.spotify.com/track/demo3"
+            }
+          ];
+          
+          // Get random song
+          const randomSong = mockSongs[Math.floor(Math.random() * mockSongs.length)];
+          
+          // Check if song has preview
+          if (randomSong.preview_url) {
+            songWithPreview = randomSong;
+            console.log(`Found song with preview on attempt ${attempts}:`, randomSong.name);
+          } else {
+            console.log(`Song "${randomSong.name}" has no preview, trying another...`);
+          }
+          
+          // In production, this would be:
+          // const spotifyService = SpotifyService.getInstance();
+          // const randomSong = await spotifyService.getRandomTrack();
+          // if (randomSong.preview_url) {
+          //   songWithPreview = randomSong;
+          // }
+          
+        } catch (songError) {
+          console.log(`Attempt ${attempts} failed:`, songError);
+        }
+      }
+      
+      if (songWithPreview) {
+        setCurrentSong(songWithPreview);
+      } else {
+        throw new Error("No songs with preview found after multiple attempts");
+      }
+      
     } catch (err) {
-      setError("Error loading song. Please try again.");
+      setError("Error loading song with preview. Please try again.");
       console.error("Error loading song:", err);
     } finally {
       setLoading(false);
