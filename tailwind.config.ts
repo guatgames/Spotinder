@@ -57,6 +57,27 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
+        // Music app specific colors
+        music: {
+          "bg-primary": "hsl(var(--music-bg-primary))",
+          "bg-secondary": "hsl(var(--music-bg-secondary))",
+          "bg-card": "hsl(var(--music-bg-card))",
+          accent: "hsl(var(--music-accent))",
+          "accent-hover": "hsl(var(--music-accent-hover))",
+          "text-primary": "hsl(var(--music-text-primary))",
+          "text-secondary": "hsl(var(--music-text-secondary))",
+          "text-muted": "hsl(var(--music-text-muted))",
+        },
+      },
+      backgroundImage: {
+        "gradient-primary": "var(--gradient-primary)",
+        "gradient-card": "var(--gradient-card)",
+        "gradient-bg": "var(--gradient-bg)",
+      },
+      boxShadow: {
+        card: "var(--shadow-card)",
+        button: "var(--shadow-button)",
+        glow: "var(--shadow-glow)",
       },
       borderRadius: {
         lg: "var(--radius)",
@@ -80,10 +101,52 @@ export default {
             height: "0",
           },
         },
+        "swipe-right": {
+          "0%": {
+            transform: "translateX(0) rotate(0deg)",
+            opacity: "1"
+          },
+          "100%": {
+            transform: "translateX(100vw) rotate(15deg)",
+            opacity: "0"
+          }
+        },
+        "swipe-left": {
+          "0%": {
+            transform: "translateX(0) rotate(0deg)",
+            opacity: "1"
+          },
+          "100%": {
+            transform: "translateX(-100vw) rotate(-15deg)",
+            opacity: "0"
+          }
+        },
+        "card-enter": {
+          "0%": {
+            transform: "scale(0.8) translateY(20px)",
+            opacity: "0"
+          },
+          "100%": {
+            transform: "scale(1) translateY(0)",
+            opacity: "1"
+          }
+        },
+        "pulse-glow": {
+          "0%, 100%": {
+            boxShadow: "var(--shadow-card)"
+          },
+          "50%": {
+            boxShadow: "var(--shadow-glow)"
+          }
+        }
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
+        "swipe-right": "swipe-right 0.5s ease-out forwards",
+        "swipe-left": "swipe-left 0.5s ease-out forwards",
+        "card-enter": "card-enter 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55)",
+        "pulse-glow": "pulse-glow 2s ease-in-out infinite",
       },
     },
   },
