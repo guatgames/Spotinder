@@ -190,30 +190,30 @@ export class SpotifyService {
     return [
       {
         id: "1",
-        name: "Blinding Lights",
-        artist: "The Weeknd",
-        album: "After Hours",
+        name: "Two Moons",
+        artist: "BoyWithUke",
+        album: "Serotonin Dreams",
         image: "https://i.scdn.co/image/ab67616d0000b273c3af0c2355c24ed7023cd394",
-        preview_url: null,
-        external_url: "https://open.spotify.com/track/0VjIjW4GlULA4KzTkAAiHI"
+        preview_url: "https://p.scdn.co/mp3-preview/demo",
+        external_url: "https://open.spotify.com/track/demo1"
       },
       {
         id: "2",
-        name: "Watermelon Sugar",
-        artist: "Harry Styles",
-        album: "Fine Line",
+        name: "Two Moons",
+        artist: "BoyWithUke",
+        album: "Serotonin Dreams",
         image: "https://i.scdn.co/image/ab67616d0000b273adba9b8b6a477c693c3e2bef",
         preview_url: null,
-        external_url: "https://open.spotify.com/track/6UelLqGlWMcVH1E5c4H7lY"
+        external_url: "https://open.spotify.com/track/demo2"
       },
       {
         id: "3",
-        name: "Good 4 U",
-        artist: "Olivia Rodrigo",
-        album: "SOUR",
+        name: "Two Moons",
+        artist: "BoyWithUke",
+        album: "Serotonin Dreams",
         image: "https://i.scdn.co/image/ab67616d0000b273a91c10fe9472d9bd89802e5a",
-        preview_url: null,
-        external_url: "https://open.spotify.com/track/4ZtFanR9U6ndgddUvNcjcG"
+        preview_url: "https://p.scdn.co/mp3-preview/demo2",
+        external_url: "https://open.spotify.com/track/demo3"
       }
     ];
   }
