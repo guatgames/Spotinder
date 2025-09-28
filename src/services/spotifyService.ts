@@ -5,8 +5,8 @@ import { Song } from "@/pages/Index";
 export class SpotifyService {
   private static instance: SpotifyService;
   private accessToken: string | null = null;
-  private clientId: string = ""; // Add your Spotify Client ID here
-  private clientSecret: string = ""; // Add your Spotify Client Secret here
+  private clientId: string = "ca37377773084203a2764b7c55c52514"; // Add your Spotify Client ID here
+  private clientSecret: string = "b3559bceab1f4ad39b9d1671664e2c63"; // Add your Spotify Client Secret here
 
   static getInstance(): SpotifyService {
     if (!SpotifyService.instance) {

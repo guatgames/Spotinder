@@ -68,8 +68,12 @@ const Index = () => {
           ];
           
           // Get random song
-          const randomSong = mockSongs[Math.floor(Math.random() * mockSongs.length)];
-          
+          //const randomSong = mockSongs[Math.floor(Math.random() * mockSongs.length)];
+           const spotifyService = SpotifyService.getInstance();
+           const randomSong = await spotifyService.getRandomTrack();
+           if (randomSong.preview_url) {
+             songWithPreview = randomSong;
+           }
           // Check if song has preview
           if (randomSong.preview_url) {
             songWithPreview = randomSong;
@@ -79,11 +83,7 @@ const Index = () => {
           }
           
           // In production, this would be:
-          // const spotifyService = SpotifyService.getInstance();
-          // const randomSong = await spotifyService.getRandomTrack();
-          // if (randomSong.preview_url) {
-          //   songWithPreview = randomSong;
-          // }
+          
           
         } catch (songError) {
           console.log(`Attempt ${attempts} failed:`, songError);
