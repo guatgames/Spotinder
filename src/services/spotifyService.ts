@@ -99,7 +99,7 @@ export class SpotifyService {
     }
   }
 
-  // Get random track from popular playlists with preview URL
+  // Get random track with preview URL using search
   async getRandomTrack(): Promise<Song> {
     if (!this.accessToken) {
       await this.authenticate();
@@ -108,56 +108,53 @@ export class SpotifyService {
     let attempts = 0;
     const maxAttempts = 10;
     
+    // Popular search terms to get diverse results
+    const searchTerms = [
+      'year:2023', 'year:2022', 'year:2021', 'year:2020',
+      'genre:pop', 'genre:rock', 'genre:hip-hop', 'genre:electronic',
+      'a', 'the', 'love', 'music', 'song', 'dance', 'life', 'night'
+    ];
+    
     while (attempts < maxAttempts) {
       attempts++;
       
       try {
-        // Get featured playlists
-        const playlistsResponse = await fetch(
-          'https://api.spotify.com/v1/browse/featured-playlists?limit=20',
-          {
-            headers: {
-              'Authorization': `Bearer ${this.accessToken}`,
-            },
-          }
-        );
-
-        if (!playlistsResponse.ok) {
-          throw new Error('Failed to fetch playlists');
-        }
-
-        const playlistsData = await playlistsResponse.json();
-        const randomPlaylist = playlistsData.playlists.items[
-          Math.floor(Math.random() * playlistsData.playlists.items.length)
-        ];
-
-        // Get tracks from random playlist
-        const tracksResponse = await fetch(
-          `https://api.spotify.com/v1/playlists/${randomPlaylist.id}/tracks?limit=50`,
-          {
-            headers: {
-              'Authorization': `Bearer ${this.accessToken}`,
-            },
-          }
-        );
-
-        if (!tracksResponse.ok) {
-          throw new Error('Failed to fetch tracks');
-        }
-
-        const tracksData = await tracksResponse.json();
-        // Filter tracks that have preview_url available
-        const tracksWithPreview = tracksData.items.filter((item: any) => 
-          item.track && item.track.preview_url !== null
-        );
+        // Use search with random terms to get diverse results
+        const randomTerm = searchTerms[Math.floor(Math.random() * searchTerms.length)];
+        const randomOffset = Math.floor(Math.random() * 500); // Spotify allows up to 1000
         
-        if (tracksWithPreview.length > 0) {
-          const randomTrack = tracksWithPreview[Math.floor(Math.random() * tracksWithPreview.length)];
-          const formattedTrack = this.formatTrack(randomTrack.track);
-          console.log(`Found track with preview on attempt ${attempts}:`, formattedTrack.name);
-          return formattedTrack;
+        const searchResponse = await fetch(
+          `https://api.spotify.com/v1/search?q=${encodeURIComponent(randomTerm)}&type=track&limit=50&offset=${randomOffset}`,
+          {
+            headers: {
+              'Authorization': `Bearer ${this.accessToken}`,
+            },
+          }
+        );
+
+        if (!searchResponse.ok) {
+          console.log(`Search attempt ${attempts} failed with status:`, searchResponse.status);
+          continue;
+        }
+
+        const searchData = await searchResponse.json();
+        
+        if (searchData.tracks && searchData.tracks.items.length > 0) {
+          // Filter tracks that have preview_url available
+          const tracksWithPreview = searchData.tracks.items.filter((track: any) => 
+            track && track.preview_url !== null
+          );
+          
+          if (tracksWithPreview.length > 0) {
+            const randomTrack = tracksWithPreview[Math.floor(Math.random() * tracksWithPreview.length)];
+            const formattedTrack = this.formatTrack(randomTrack);
+            console.log(`Found track with preview on attempt ${attempts}:`, formattedTrack.name);
+            return formattedTrack;
+          } else {
+            console.log(`Attempt ${attempts}: No tracks with preview found for "${randomTerm}", trying another...`);
+          }
         } else {
-          console.log(`Attempt ${attempts}: No tracks with preview found in playlist "${randomPlaylist.name}", trying another...`);
+          console.log(`Attempt ${attempts}: No tracks found for "${randomTerm}", trying another...`);
         }
         
       } catch (error) {
