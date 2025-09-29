@@ -27,77 +27,16 @@ const Index = () => {
       setLoading(true);
       setError(null);
       
-      // Try to get a song with preview URL, retry if necessary
-      let attempts = 0;
-      const maxAttempts = 10;
-      let songWithPreview: Song | null = null;
+      const spotifyService = SpotifyService.getInstance();
+      const randomSong = await spotifyService.getRandomTrack();
       
-      while (attempts < maxAttempts && !songWithPreview) {
-        attempts++;
-        
-        try {
-          // For demo purposes, we'll use mock songs with different preview availability
-          const mockSongs: Song[] = [
-            {
-              id: "demo-song-1",
-              name: "Two Moons",
-              artist: "BoyWithUke",
-              album: "Serotonin Dreams", 
-              image: demoAlbumCover,
-              preview_url: "https://p.scdn.co/mp3-preview/demo", // Mock preview URL
-              external_url: "https://open.spotify.com/track/demo1"
-            },
-            {
-              id: "demo-song-2", 
-              name: "Two Moons",
-              artist: "BoyWithUke",
-              album: "Serotonin Dreams",
-              image: demoAlbumCover,
-              preview_url: null, // No preview
-              external_url: "https://open.spotify.com/track/demo2"
-            },
-            {
-              id: "demo-song-3",
-              name: "Two Moons", 
-              artist: "BoyWithUke",
-              album: "Serotonin Dreams",
-              image: demoAlbumCover,
-              preview_url: "https://p.scdn.co/mp3-preview/demo2", // Mock preview URL
-              external_url: "https://open.spotify.com/track/demo3"
-            }
-          ];
-          
-          // Get random song
-          //const randomSong = mockSongs[Math.floor(Math.random() * mockSongs.length)];
-           const spotifyService = SpotifyService.getInstance();
-           const randomSong = await spotifyService.getRandomTrack();
-           if (randomSong.preview_url) {
-             songWithPreview = randomSong;
-           }
-          // Check if song has preview
-          if (randomSong.preview_url) {
-            songWithPreview = randomSong;
-            console.log(`Found song with preview on attempt ${attempts}:`, randomSong.name);
-          } else {
-            console.log(`Song "${randomSong.name}" has no preview, trying another...`);
-          }
-          
-          // In production, this would be:
-          
-          
-        } catch (songError) {
-          console.log(`Attempt ${attempts} failed:`, songError);
-        }
-      }
+      console.log(`Loaded song:`, randomSong.name, 'by', randomSong.artist);
+      console.log(`Has preview:`, randomSong.preview_url ? 'Yes' : 'No');
       
-      if (songWithPreview) {
-        setCurrentSong(songWithPreview);
-      } else {
-        throw new Error("No songs with preview found after multiple attempts");
-      }
+      setCurrentSong(randomSong);
       
     } catch (err) {
-      setError("Error loading song with preview. Please try again.");
+      setError("Error loading song. Please try again.");
       console.error("Error loading song:", err);
     } finally {
       setLoading(false);
