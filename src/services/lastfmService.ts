@@ -7,7 +7,7 @@ export class LastfmService {
   private static instance: LastfmService;
   private readonly baseUrl = "https://ws.audioscrobbler.com/2.0";
   // This is a demo API key - users should get their own from Last.fm
-  private readonly apiKey = "YOUR_LASTFM_API_KEY";
+  private readonly apiKey = "d88cc33a66c464cc2ac1108685eaac34";
 
   static getInstance(): LastfmService {
     if (!LastfmService.instance) {
