@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { SongCard } from "@/components/SongCard";
-import { SpotifyService } from "@/services/spotifyService";
+import { AppleMusicService } from "@/services/appleMusicService";
 import demoAlbumCover from "@/assets/demo-album-cover.jpg";
 
 export interface Song {
@@ -27,8 +27,8 @@ const Index = () => {
       setLoading(true);
       setError(null);
       
-      const spotifyService = SpotifyService.getInstance();
-      const randomSong = await spotifyService.getRandomTrack();
+      const appleMusicService = AppleMusicService.getInstance();
+      const randomSong = await appleMusicService.getRandomTrack();
       
       console.log(`Loaded song:`, randomSong.name, 'by', randomSong.artist);
       console.log(`Has preview:`, randomSong.preview_url ? 'Yes' : 'No');
@@ -108,7 +108,7 @@ const Index = () => {
       {/* Footer */}
       <footer className="p-6 text-center">
         <p className="text-music-text-muted text-sm">
-          Powered by Spotify API
+          Powered by Apple Music API
         </p>
       </footer>
     </div>
