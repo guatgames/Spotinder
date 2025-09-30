@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { SongCard } from "@/components/SongCard";
-import { DeezerService } from "@/services/deezerService";
+import { LastfmService } from "@/services/lastfmService";
 import demoAlbumCover from "@/assets/demo-album-cover.jpg";
 
 export interface Song {
@@ -27,8 +27,8 @@ const Index = () => {
       setLoading(true);
       setError(null);
       
-      const deezerService = DeezerService.getInstance();
-      const randomSong = await deezerService.getRandomTrack();
+      const lastfmService = LastfmService.getInstance();
+      const randomSong = await lastfmService.getRandomTrack();
       
       console.log(`Loaded song:`, randomSong.name, 'by', randomSong.artist);
       console.log(`Has preview:`, randomSong.preview_url ? 'Yes' : 'No');
@@ -108,7 +108,7 @@ const Index = () => {
       {/* Footer */}
       <footer className="p-6 text-center">
         <p className="text-music-text-muted text-sm">
-          Powered by Deezer API
+          Powered by Last.fm API
         </p>
       </footer>
     </div>
