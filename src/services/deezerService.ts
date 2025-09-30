@@ -2,8 +2,10 @@ import { Song } from "@/pages/Index";
 
 // Deezer API Service
 // Note: Deezer API is free and doesn't require authentication for basic search
+// Using CORS proxy to bypass browser restrictions
 export class DeezerService {
   private static instance: DeezerService;
+  private readonly corsProxy = "https://api.allorigins.win/raw?url=";
   private readonly baseUrl = "https://api.deezer.com";
 
   static getInstance(): DeezerService {
@@ -16,9 +18,8 @@ export class DeezerService {
   // Search for tracks
   async searchTracks(query: string, limit: number = 20): Promise<Song[]> {
     try {
-      const response = await fetch(
-        `${this.baseUrl}/search?q=${encodeURIComponent(query)}&limit=${limit}`
-      );
+      const apiUrl = `${this.baseUrl}/search?q=${encodeURIComponent(query)}&limit=${limit}`;
+      const response = await fetch(`${this.corsProxy}${encodeURIComponent(apiUrl)}`);
 
       if (!response.ok) {
         throw new Error('Deezer search failed');
@@ -53,9 +54,8 @@ export class DeezerService {
         // Random index for variety (Deezer uses index parameter)
         const randomIndex = Math.floor(Math.random() * 100);
         
-        const searchResponse = await fetch(
-          `${this.baseUrl}/search?q=${encodeURIComponent(searchQuery)}&index=${randomIndex}&limit=50`
-        );
+        const apiUrl = `${this.baseUrl}/search?q=${encodeURIComponent(searchQuery)}&index=${randomIndex}&limit=50`;
+        const searchResponse = await fetch(`${this.corsProxy}${encodeURIComponent(apiUrl)}`);
 
         if (!searchResponse.ok) {
           console.log(`Search attempt ${attempts} failed with status:`, searchResponse.status);
@@ -112,7 +112,8 @@ export class DeezerService {
   // Get chart tracks (popular songs)
   async getChartTracks(limit: number = 20): Promise<Song[]> {
     try {
-      const response = await fetch(`${this.baseUrl}/chart/0/tracks?limit=${limit}`);
+      const apiUrl = `${this.baseUrl}/chart/0/tracks?limit=${limit}`;
+      const response = await fetch(`${this.corsProxy}${encodeURIComponent(apiUrl)}`);
       
       if (!response.ok) {
         throw new Error('Failed to fetch Deezer charts');
