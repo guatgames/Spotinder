@@ -1,12 +1,9 @@
 import { Song } from "@/pages/Index";
+import { supabase } from "@/integrations/supabase/client";
 
-// Deezer API Service
-// Note: Deezer API is free and doesn't require authentication for basic search
-// Using CORS proxy to bypass browser restrictions
+// Deezer API Service using Edge Function to avoid CORS
 export class DeezerService {
   private static instance: DeezerService;
-  private readonly corsProxy = "https://api.allorigins.win/raw?url=";
-  private readonly baseUrl = "https://api.deezer.com";
 
   static getInstance(): DeezerService {
     if (!DeezerService.instance) {
@@ -15,17 +12,17 @@ export class DeezerService {
     return DeezerService.instance;
   }
 
-  // Search for tracks
+  // Search for tracks using Edge Function
   async searchTracks(query: string, limit: number = 20): Promise<Song[]> {
     try {
-      const apiUrl = `${this.baseUrl}/search?q=${encodeURIComponent(query)}&limit=${limit}`;
-      const response = await fetch(`${this.corsProxy}${encodeURIComponent(apiUrl)}`);
+      const { data, error } = await supabase.functions.invoke('deezer-search', {
+        body: { query, limit }
+      });
 
-      if (!response.ok) {
-        throw new Error('Deezer search failed');
+      if (error) {
+        throw error;
       }
 
-      const data = await response.json();
       return this.formatTracks(data.data || []);
     } catch (error) {
       console.error('Deezer search error:', error);
@@ -51,22 +48,20 @@ export class DeezerService {
       try {
         const searchQuery = searchTerms[Math.floor(Math.random() * searchTerms.length)];
         
-        // Random index for variety (Deezer uses index parameter)
-        const randomIndex = Math.floor(Math.random() * 100);
+        console.log(`Searching for tracks with term: "${searchQuery}" (attempt ${attempts})`);
         
-        const apiUrl = `${this.baseUrl}/search?q=${encodeURIComponent(searchQuery)}&index=${randomIndex}&limit=50`;
-        const searchResponse = await fetch(`${this.corsProxy}${encodeURIComponent(apiUrl)}`);
+        const { data, error } = await supabase.functions.invoke('deezer-search', {
+          body: { query: searchQuery, limit: 50 }
+        });
 
-        if (!searchResponse.ok) {
-          console.log(`Search attempt ${attempts} failed with status:`, searchResponse.status);
+        if (error) {
+          console.log(`Search attempt ${attempts} failed:`, error);
           continue;
         }
 
-        const searchData = await searchResponse.json();
-        
-        if (searchData.data && searchData.data.length > 0) {
+        if (data.data && data.data.length > 0) {
           // Filter tracks with preview (Deezer usually always has previews)
-          const tracksWithPreview = searchData.data.filter((track: any) => 
+          const tracksWithPreview = data.data.filter((track: any) => 
             track && track.preview
           );
           
@@ -109,17 +104,17 @@ export class DeezerService {
     };
   }
 
-  // Get chart tracks (popular songs)
+  // Get chart tracks (popular songs) using Edge Function
   async getChartTracks(limit: number = 20): Promise<Song[]> {
     try {
-      const apiUrl = `${this.baseUrl}/chart/0/tracks?limit=${limit}`;
-      const response = await fetch(`${this.corsProxy}${encodeURIComponent(apiUrl)}`);
+      const { data, error } = await supabase.functions.invoke('deezer-search', {
+        body: { query: 'chart', limit }
+      });
       
-      if (!response.ok) {
-        throw new Error('Failed to fetch Deezer charts');
+      if (error) {
+        throw error;
       }
 
-      const data = await response.json();
       return this.formatTracks(data.data || []);
     } catch (error) {
       console.error('Deezer chart error:', error);

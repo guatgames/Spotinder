@@ -1,0 +1,4 @@
+project_id = "yudctampxrskgtjxfspv"
+
+[functions.deezer-search]
+verify_jwt = false
