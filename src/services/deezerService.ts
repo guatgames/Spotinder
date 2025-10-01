@@ -37,7 +37,7 @@ export class DeezerService {
     
     // Popular search terms to get diverse results
     const searchTerms = [
-      'love', 'night', 'day', 'heart', 'dream', 'time', 'life', 'dance', 
+      'quiero', 'night', 'besos', 'heart', 'dream', 'amor', 'life', 'dance', 
       'rock', 'pop', 'soul', 'blues', 'summer', 'winter', 'fire', 'water',
       'happy', 'sad', 'stars', 'moon', 'sun', 'rain', 'freedom', 'hope'
     ];
