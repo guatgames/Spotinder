@@ -30,17 +30,26 @@ export class DeezerService {
     }
   }
 
-  // Get random track with preview URL - Deezer always provides previews
-  async getRandomTrack(): Promise<Song> {
+  // Get random track with preview URL based on user's favorite artists
+  async getRandomTrack(favoriteArtists?: Artist[]): Promise<Song> {
     let attempts = 0;
     const maxAttempts = 10;
     
-    // Popular search terms to get diverse results
-    const searchTerms = [
-      'quiero', 'night', 'besos', 'heart', 'dream', 'amor', 'life', 'dance', 
-      'rock', 'pop', 'soul', 'blues', 'summer', 'winter', 'fire', 'water',
-      'happy', 'sad', 'stars', 'moon', 'sun', 'rain', 'freedom', 'hope'
-    ];
+    // If user has favorite artists, use them for personalized recommendations
+    let searchTerms: string[];
+    
+    if (favoriteArtists && favoriteArtists.length > 0) {
+      // Use artist names for more personalized results
+      searchTerms = favoriteArtists.map(artist => artist.name);
+      console.log('Using personalized search terms based on favorite artists:', searchTerms.join(', '));
+    } else {
+      // Fallback to popular search terms
+      searchTerms = [
+        'quiero', 'night', 'besos', 'heart', 'dream', 'amor', 'life', 'dance', 
+        'rock', 'pop', 'soul', 'blues', 'summer', 'winter', 'fire', 'water',
+        'happy', 'sad', 'stars', 'moon', 'sun', 'rain', 'freedom', 'hope'
+      ];
+    }
     
     while (attempts < maxAttempts) {
       attempts++;
