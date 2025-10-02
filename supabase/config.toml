@@ -2,3 +2,6 @@ project_id = "yudctampxrskgtjxfspv"
 
 [functions.deezer-search]
 verify_jwt = false
+
+[functions.deezer-artist-search]
+verify_jwt = false

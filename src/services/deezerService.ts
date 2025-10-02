@@ -121,4 +121,39 @@ export class DeezerService {
       throw error;
     }
   }
+
+  // Search for artists using Edge Function
+  async searchArtists(query: string, limit: number = 10): Promise<Artist[]> {
+    try {
+      const { data, error } = await supabase.functions.invoke('deezer-artist-search', {
+        body: { query, limit }
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      return this.formatArtists(data.data || []);
+    } catch (error) {
+      console.error('Deezer artist search error:', error);
+      throw error;
+    }
+  }
+
+  // Format artist data
+  private formatArtists(artists: any[]): Artist[] {
+    return artists.map(artist => ({
+      id: artist.id.toString(),
+      name: artist.name,
+      picture: artist.picture_xl || artist.picture_big || artist.picture_medium || artist.picture,
+      picture_medium: artist.picture_medium || artist.picture,
+    }));
+  }
+}
+
+export interface Artist {
+  id: string;
+  name: string;
+  picture: string;
+  picture_medium: string;
 }

@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { SongCard } from "@/components/SongCard";
-import { DeezerService } from "@/services/deezerService";
+import { MusicPreferences } from "@/components/MusicPreferences";
+import { DeezerService, Artist } from "@/services/deezerService";
 import demoAlbumCover from "@/assets/demo-album-cover.jpg";
 
 export interface Song {
@@ -17,10 +18,14 @@ const Index = () => {
   const [currentSong, setCurrentSong] = useState<Song | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [userPreferences, setUserPreferences] = useState<Artist[] | null>(null);
+  const [showPreferences, setShowPreferences] = useState(true);
 
   useEffect(() => {
-    loadRandomSong();
-  }, []);
+    if (!showPreferences && userPreferences) {
+      loadRandomSong();
+    }
+  }, [showPreferences, userPreferences]);
 
   const loadRandomSong = async () => {
     try {
@@ -54,6 +59,17 @@ const Index = () => {
     // Here you would save the disliked song to user's preferences
     await loadRandomSong();
   };
+
+  const handlePreferencesComplete = (selectedArtists: Artist[]) => {
+    setUserPreferences(selectedArtists);
+    setShowPreferences(false);
+    console.log("User selected artists:", selectedArtists.map(a => a.name).join(", "));
+  };
+
+  // Show preferences screen first
+  if (showPreferences) {
+    return <MusicPreferences onComplete={handlePreferencesComplete} />;
+  }
 
   if (loading) {
     return (
