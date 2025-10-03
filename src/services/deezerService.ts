@@ -30,54 +30,26 @@ export class DeezerService {
     }
   }
 
-<<<<<<< HEAD
-  // Search for a specific track by name and artist in Deezer
-  async searchSpecificTrack(trackName: string, artistName: string): Promise<Song | null> {
-    try {
-      const query = `${trackName} ${artistName}`;
-      console.log('Searching Deezer for:', query);
-      
-      const { data, error } = await supabase.functions.invoke('deezer-search', {
-        body: { query, limit: 5 }
-      });
-
-      if (error) {
-        throw error;
-      }
-
-      const tracks = this.formatTracks(data.data || []);
-      
-      // Return first result with preview
-      const trackWithPreview = tracks.find(track => track.preview_url);
-      
-      if (trackWithPreview) {
-        console.log('Found Deezer track:', trackWithPreview.name, 'by', trackWithPreview.artist);
-        return trackWithPreview;
-      }
-
-      console.log('No Deezer track found with preview for:', query);
-      return null;
-    } catch (error) {
-      console.error('Deezer specific search error:', error);
-      return null;
-    }
-  }
-
   // Get random track with preview URL based on user's favorite artists
   async getRandomTrack(favoriteArtists?: Artist[]): Promise<Song> {
-=======
-  // Get random track with preview URL - Deezer always provides previews
-  async getRandomTrack(): Promise<Song> {
->>>>>>> parent of db9d1df (Refactor: Use selected artists for recommendations)
     let attempts = 0;
     const maxAttempts = 10;
     
-    // Popular search terms to get diverse results
-    const searchTerms = [
-      'quiero', 'night', 'besos', 'heart', 'dream', 'amor', 'life', 'dance', 
-      'rock', 'pop', 'soul', 'blues', 'summer', 'winter', 'fire', 'water',
-      'happy', 'sad', 'stars', 'moon', 'sun', 'rain', 'freedom', 'hope'
-    ];
+    // If user has favorite artists, use them for personalized recommendations
+    let searchTerms: string[];
+    
+    if (favoriteArtists && favoriteArtists.length > 0) {
+      // Use artist names for more personalized results
+      searchTerms = favoriteArtists.map(artist => artist.name);
+      console.log('Using personalized search terms based on favorite artists:', searchTerms.join(', '));
+    } else {
+      // Fallback to popular search terms
+      searchTerms = [
+        'quiero', 'night', 'besos', 'heart', 'dream', 'amor', 'life', 'dance', 
+        'rock', 'pop', 'soul', 'blues', 'summer', 'winter', 'fire', 'water',
+        'happy', 'sad', 'stars', 'moon', 'sun', 'rain', 'freedom', 'hope'
+      ];
+    }
     
     while (attempts < maxAttempts) {
       attempts++;

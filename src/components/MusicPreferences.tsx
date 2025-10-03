@@ -100,7 +100,7 @@ export const MusicPreferences = ({ onComplete }: MusicPreferencesProps) => {
       <div className="w-full max-w-4xl">
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold text-music-text-primary mb-2">
-            Elige tus gustos musicales 🎶
+            Elige tus gustos musicales 
           </h1>
           <p className="text-music-text-secondary">
             Selecciona tus artistas favoritos para recibir mejores recomendaciones
