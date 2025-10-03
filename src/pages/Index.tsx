@@ -33,7 +33,7 @@ const Index = () => {
       setError(null);
       
       const deezerService = DeezerService.getInstance();
-      const randomSong = await deezerService.getRandomTrack();
+      const randomSong = await deezerService.getRandomTrack(userPreferences || undefined);
       
       console.log(`Loaded song:`, randomSong.name, 'by', randomSong.artist);
       console.log(`Has preview:`, randomSong.preview_url ? 'Yes' : 'No');
