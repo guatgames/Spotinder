@@ -5,3 +5,12 @@ verify_jwt = false
 
 [functions.deezer-artist-search]
 verify_jwt = false
+
+[functions.spotify-auth]
+verify_jwt = false
+
+[functions.spotify-callback]
+verify_jwt = false
+
+[functions.spotify-recommendations]
+verify_jwt = false
