@@ -22,6 +22,13 @@ export const SongCard = ({ song, onLike, onDislike }: SongCardProps) => {
     setDragOffset({ x: 0, y: 0 });
     setIsPlaying(false);
     setAnimating(false);
+
+    // Auto-play the preview
+    if (audioRef.current && song.preview_url) {
+      audioRef.current.play().catch(err => {
+        console.log('Auto-play prevented:', err);
+      });
+    }
   }, [song]);
 
   const handleMouseDown = (e: React.MouseEvent) => {
@@ -152,7 +159,7 @@ export const SongCard = ({ song, onLike, onDislike }: SongCardProps) => {
             onClick={togglePlay}
             className="absolute bottom-4 right-4 bg-music-accent hover:bg-music-accent-hover text-music-bg-primary p-3 rounded-full shadow-button transition-all duration-200 hover:scale-105"
           >
-            {isPlaying ? <Pause size={24} /> : <Play size={24} />}
+            {isPlaying ? <Pause size={32} className="md:w-6 md:h-6" /> : <Play size={32} className="md:w-6 md:h-6" />}
           </button>
         </div>
 
