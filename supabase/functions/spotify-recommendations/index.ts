@@ -70,6 +70,7 @@ serve(async (req) => {
     }
 
     // Get recommendations based on top tracks
+    console.log('Requesting recommendations with seed tracks:', seedTracks);
     const recommendationsResponse = await fetch(
       `https://api.spotify.com/v1/recommendations?seed_tracks=${seedTracks}&limit=50`,
       {
@@ -81,7 +82,31 @@ serve(async (req) => {
 
     if (!recommendationsResponse.ok) {
       const errorData = await recommendationsResponse.text();
+      console.error('Recommendations error status:', recommendationsResponse.status);
       console.error('Recommendations error:', errorData);
+      
+      // Fallback: Try with genres instead
+      console.log('Falling back to genre-based recommendations');
+      const genreResponse = await fetch(
+        'https://api.spotify.com/v1/recommendations?seed_genres=pop,rock,electronic&limit=50',
+        {
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+          },
+        }
+      );
+      
+      if (genreResponse.ok) {
+        const genreData = await genreResponse.json();
+        console.log('Got fallback recommendations:', genreData.tracks?.length || 0);
+        return new Response(
+          JSON.stringify(genreData.tracks || []),
+          {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          }
+        );
+      }
+      
       throw new Error('Failed to get recommendations from Spotify');
     }
 
