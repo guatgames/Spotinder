@@ -30,38 +30,6 @@ export class DeezerService {
     }
   }
 
-  // Search for a specific track by name and artist in Deezer
-  async searchSpecificTrack(trackName: string, artistName: string): Promise<Song | null> {
-    try {
-      const query = `${trackName} ${artistName}`;
-      console.log('Searching Deezer for:', query);
-      
-      const { data, error } = await supabase.functions.invoke('deezer-search', {
-        body: { query, limit: 5 }
-      });
-
-      if (error) {
-        throw error;
-      }
-
-      const tracks = this.formatTracks(data.data || []);
-      
-      // Return first result with preview
-      const trackWithPreview = tracks.find(track => track.preview_url);
-      
-      if (trackWithPreview) {
-        console.log('Found Deezer track:', trackWithPreview.name, 'by', trackWithPreview.artist);
-        return trackWithPreview;
-      }
-
-      console.log('No Deezer track found with preview for:', query);
-      return null;
-    } catch (error) {
-      console.error('Deezer specific search error:', error);
-      return null;
-    }
-  }
-
   // Get random track with preview URL based on user's favorite artists
   async getRandomTrack(favoriteArtists?: Artist[]): Promise<Song> {
     let attempts = 0;
