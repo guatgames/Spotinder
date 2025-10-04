@@ -17,10 +17,21 @@ serve(async (req) => {
     const state = url.searchParams.get('state');
     const error = url.searchParams.get('error');
 
+    // Decode app origin from state
+    let appOrigin = url.origin;
+    if (state) {
+      try {
+        const stateData = JSON.parse(atob(state));
+        appOrigin = stateData.origin || url.origin;
+      } catch (e) {
+        console.error('Could not decode state:', e);
+      }
+    }
+
     if (error) {
       console.error('Spotify auth error:', error);
       // Redirect back to app with error
-      return Response.redirect(`${url.origin}/?spotify_error=${error}`);
+      return Response.redirect(`${appOrigin}/?spotify_error=${error}`);
     }
 
     if (!code) {
@@ -59,7 +70,7 @@ serve(async (req) => {
     console.log('Successfully obtained Spotify access token');
 
     // Redirect back to app with access token
-    const redirectUrl = new URL(url.origin);
+    const redirectUrl = new URL(appOrigin);
     redirectUrl.searchParams.set('spotify_token', tokenData.access_token);
     redirectUrl.searchParams.set('spotify_refresh', tokenData.refresh_token);
     redirectUrl.searchParams.set('spotify_expires', tokenData.expires_in);
@@ -67,8 +78,19 @@ serve(async (req) => {
     return Response.redirect(redirectUrl.toString());
   } catch (error) {
     console.error('Error in spotify-callback:', error);
-    // Redirect back to app with error
-    const url = new URL(req.url);
-    return Response.redirect(`${url.origin}/?spotify_error=callback_failed`);
+    // Get app origin from state if available
+    let appOrigin;
+    try {
+      const url = new URL(req.url);
+      const state = url.searchParams.get('state');
+      if (state) {
+        const stateData = JSON.parse(atob(state));
+        appOrigin = stateData.origin;
+      }
+    } catch (e) {
+      // Fallback to request origin
+      appOrigin = new URL(req.url).origin;
+    }
+    return Response.redirect(`${appOrigin}/?spotify_error=callback_failed`);
   }
 });

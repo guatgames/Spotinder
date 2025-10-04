@@ -19,6 +19,13 @@ serve(async (req) => {
       throw new Error('SPOTIFY_CLIENT_ID not configured');
     }
 
+    // Get the origin from the request (where the user is coming from)
+    const referer = req.headers.get('referer') || req.headers.get('origin');
+    if (!referer) {
+      throw new Error('Could not determine app origin');
+    }
+    const appOrigin = new URL(referer).origin;
+
     // Spotify OAuth scopes needed
     const scopes = [
       'user-read-private',
@@ -27,8 +34,11 @@ serve(async (req) => {
       'user-read-recently-played'
     ].join(' ');
 
-    // Generate random state for security
-    const state = crypto.randomUUID();
+    // Generate state with app origin encoded
+    const state = btoa(JSON.stringify({
+      random: crypto.randomUUID(),
+      origin: appOrigin
+    }));
 
     // Build Spotify authorization URL
     const authUrl = new URL('https://accounts.spotify.com/authorize');
