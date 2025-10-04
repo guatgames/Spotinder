@@ -18,9 +18,9 @@ serve(async (req) => {
       throw new Error('Access token is required');
     }
 
-    // Get user's top tracks for seed
-    const topTracksResponse = await fetch(
-      'https://api.spotify.com/v1/me/top/tracks?limit=5&time_range=medium_term',
+    // Try to get user's top artists first for better seeds
+    const topArtistsResponse = await fetch(
+      'https://api.spotify.com/v1/me/top/artists?limit=2&time_range=medium_term',
       {
         headers: {
           'Authorization': `Bearer ${accessToken}`,
@@ -28,51 +28,55 @@ serve(async (req) => {
       }
     );
 
-    if (!topTracksResponse.ok) {
-      const errorData = await topTracksResponse.text();
-      console.error('Top tracks error:', errorData);
-      throw new Error('Failed to get top tracks from Spotify');
+    let seedArtists = '';
+    if (topArtistsResponse.ok) {
+      const topArtistsData = await topArtistsResponse.json();
+      seedArtists = topArtistsData.items
+        ?.slice(0, 2)
+        .map((artist: any) => artist.id)
+        .join(',');
+      console.log('Got top artists:', topArtistsData.items?.length || 0);
     }
 
-    const topTracksData = await topTracksResponse.json();
-    console.log('Got top tracks:', topTracksData.items?.length || 0);
-
-    // Extract seed track IDs (up to 5)
-    const seedTracks = topTracksData.items
-      ?.slice(0, 5)
-      .map((track: any) => track.id)
-      .join(',');
-
-    if (!seedTracks) {
-      // If no top tracks, get recommendations based on popular genres
-      const recommendationsResponse = await fetch(
-        'https://api.spotify.com/v1/recommendations?seed_genres=pop,rock,hip-hop&limit=50',
-        {
-          headers: {
-            'Authorization': `Bearer ${accessToken}`,
-          },
-        }
-      );
-
-      if (!recommendationsResponse.ok) {
-        throw new Error('Failed to get genre-based recommendations');
+    // Get user's top tracks for seed
+    const topTracksResponse = await fetch(
+      'https://api.spotify.com/v1/me/top/tracks?limit=3&time_range=medium_term',
+      {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+        },
       }
+    );
 
-      const recommendationsData = await recommendationsResponse.json();
-      console.log('Got genre-based recommendations:', recommendationsData.tracks?.length || 0);
-      
-      return new Response(
-        JSON.stringify(recommendationsData.tracks || []),
-        {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        }
-      );
+    let seedTracks = '';
+    if (topTracksResponse.ok) {
+      const topTracksData = await topTracksResponse.json();
+      seedTracks = topTracksData.items
+        ?.slice(0, 3)
+        .map((track: any) => track.id)
+        .join(',');
+      console.log('Got top tracks:', topTracksData.items?.length || 0);
     }
 
-    // Get recommendations based on top tracks
-    console.log('Requesting recommendations with seed tracks:', seedTracks);
+    // Build recommendation URL with available seeds
+    let recommendationUrl = 'https://api.spotify.com/v1/recommendations?limit=50';
+    
+    if (seedArtists) {
+      recommendationUrl += `&seed_artists=${seedArtists}`;
+    }
+    if (seedTracks) {
+      recommendationUrl += `&seed_tracks=${seedTracks}`;
+    }
+    
+    // If no seeds available, use genres
+    if (!seedArtists && !seedTracks) {
+      console.log('No user data available, using genre seeds');
+      recommendationUrl += '&seed_genres=pop,rock,electronic';
+    }
+
+    console.log('Requesting recommendations with URL:', recommendationUrl);
     const recommendationsResponse = await fetch(
-      `https://api.spotify.com/v1/recommendations?seed_tracks=${seedTracks}&limit=50`,
+      recommendationUrl,
       {
         headers: {
           'Authorization': `Bearer ${accessToken}`,
@@ -85,10 +89,10 @@ serve(async (req) => {
       console.error('Recommendations error status:', recommendationsResponse.status);
       console.error('Recommendations error:', errorData);
       
-      // Fallback: Try with genres instead
-      console.log('Falling back to genre-based recommendations');
+      // Final fallback: Try with just genres
+      console.log('Falling back to pure genre-based recommendations');
       const genreResponse = await fetch(
-        'https://api.spotify.com/v1/recommendations?seed_genres=pop,rock,electronic&limit=50',
+        'https://api.spotify.com/v1/recommendations?seed_genres=pop,rock,indie,electronic,hip-hop&limit=50',
         {
           headers: {
             'Authorization': `Bearer ${accessToken}`,
