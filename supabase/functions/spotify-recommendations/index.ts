@@ -18,29 +18,9 @@ serve(async (req) => {
       throw new Error('Access token is required');
     }
 
-    // Try to get user's top artists first for better seeds
-    const topArtistsResponse = await fetch(
-      'https://api.spotify.com/v1/me/top/artists?limit=2&time_range=medium_term',
-      {
-        headers: {
-          'Authorization': `Bearer ${accessToken}`,
-        },
-      }
-    );
-
-    let seedArtists = '';
-    if (topArtistsResponse.ok) {
-      const topArtistsData = await topArtistsResponse.json();
-      seedArtists = topArtistsData.items
-        ?.slice(0, 2)
-        .map((artist: any) => artist.id)
-        .join(',');
-      console.log('Got top artists:', topArtistsData.items?.length || 0);
-    }
-
-    // Get user's top tracks for seed
+    // Try to get user's top tracks for seed (limit to 2 for better results)
     const topTracksResponse = await fetch(
-      'https://api.spotify.com/v1/me/top/tracks?limit=3&time_range=medium_term',
+      'https://api.spotify.com/v1/me/top/tracks?limit=2&time_range=short_term',
       {
         headers: {
           'Authorization': `Bearer ${accessToken}`,
@@ -51,30 +31,30 @@ serve(async (req) => {
     let seedTracks = '';
     if (topTracksResponse.ok) {
       const topTracksData = await topTracksResponse.json();
-      seedTracks = topTracksData.items
-        ?.slice(0, 3)
-        .map((track: any) => track.id)
-        .join(',');
-      console.log('Got top tracks:', topTracksData.items?.length || 0);
+      if (topTracksData.items && topTracksData.items.length > 0) {
+        seedTracks = topTracksData.items
+          .slice(0, 2)
+          .map((track: any) => track.id)
+          .join(',');
+        console.log('Got top tracks:', topTracksData.items.length);
+      }
+    } else {
+      console.log('Failed to get top tracks:', topTracksResponse.status);
     }
 
-    // Build recommendation URL with available seeds
+    // Build recommendation URL - use ONLY tracks as seeds, max 2
     let recommendationUrl = 'https://api.spotify.com/v1/recommendations?limit=50';
     
-    if (seedArtists) {
-      recommendationUrl += `&seed_artists=${seedArtists}`;
-    }
     if (seedTracks) {
       recommendationUrl += `&seed_tracks=${seedTracks}`;
-    }
-    
-    // If no seeds available, use genres
-    if (!seedArtists && !seedTracks) {
+      console.log('Using track seeds:', seedTracks);
+    } else {
+      // If no tracks available, use genres
       console.log('No user data available, using genre seeds');
-      recommendationUrl += '&seed_genres=pop,rock,electronic';
+      recommendationUrl += '&seed_genres=pop,rock';
     }
 
-    console.log('Requesting recommendations with URL:', recommendationUrl);
+    console.log('Requesting recommendations from:', recommendationUrl);
     const recommendationsResponse = await fetch(
       recommendationUrl,
       {
@@ -87,12 +67,12 @@ serve(async (req) => {
     if (!recommendationsResponse.ok) {
       const errorData = await recommendationsResponse.text();
       console.error('Recommendations error status:', recommendationsResponse.status);
-      console.error('Recommendations error:', errorData);
+      console.error('Recommendations error body:', errorData);
       
-      // Final fallback: Try with just genres
-      console.log('Falling back to pure genre-based recommendations');
+      // Final fallback: Try with just 2 simple genres
+      console.log('Falling back to genre-based recommendations');
       const genreResponse = await fetch(
-        'https://api.spotify.com/v1/recommendations?seed_genres=pop,rock,indie,electronic,hip-hop&limit=50',
+        'https://api.spotify.com/v1/recommendations?seed_genres=pop,rock&limit=50',
         {
           headers: {
             'Authorization': `Bearer ${accessToken}`,
@@ -109,9 +89,12 @@ serve(async (req) => {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           }
         );
+      } else {
+        const fallbackError = await genreResponse.text();
+        console.error('Fallback also failed:', genreResponse.status, fallbackError);
       }
       
-      throw new Error('Failed to get recommendations from Spotify');
+      throw new Error(`Spotify API error: ${recommendationsResponse.status} - ${errorData}`);
     }
 
     const recommendationsData = await recommendationsResponse.json();
