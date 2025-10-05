@@ -67,19 +67,31 @@ export class DeezerService {
     let attempts = 0;
     const maxAttempts = 10;
     
-    // If user has favorite artists, use them for personalized recommendations
+    // If user has favorite artists, build genre-based search terms
     let searchTerms: string[];
     
     if (favoriteArtists && favoriteArtists.length > 0) {
-      // Use artist names for more personalized results
-      searchTerms = favoriteArtists.map(artist => artist.name);
-      console.log('Using personalized search terms based on favorite artists:', searchTerms.join(', '));
+      // Create search terms using artist names combined with genre keywords
+      // This helps find similar artists and tracks in the same genre
+      const genreKeywords = ['similar', 'like', 'style', 'type', 'music', 'sound'];
+      searchTerms = [];
+      
+      favoriteArtists.forEach(artist => {
+        // Add direct artist name searches
+        searchTerms.push(artist.name);
+        // Add genre-style searches
+        const randomKeyword = genreKeywords[Math.floor(Math.random() * genreKeywords.length)];
+        searchTerms.push(`${artist.name} ${randomKeyword}`);
+      });
+      
+      console.log('Using genre-based search terms from favorite artists:', searchTerms.join(', '));
     } else {
-      // Fallback to popular search terms
+      // Fallback to popular genre-based search terms
       searchTerms = [
-        'quiero', 'night', 'besos', 'heart', 'dream', 'amor', 'life', 'dance', 
-        'rock', 'pop', 'soul', 'blues', 'summer', 'winter', 'fire', 'water',
-        'happy', 'sad', 'stars', 'moon', 'sun', 'rain', 'freedom', 'hope'
+        'pop music', 'rock music', 'indie music', 'electronic music', 'hip hop',
+        'latin music', 'reggaeton', 'rap', 'r&b', 'soul', 'jazz', 'blues',
+        'alternative', 'dance music', 'edm', 'house music', 'folk',
+        'country', 'metal', 'punk', 'acoustic', 'chill music'
       ];
     }
     
@@ -89,7 +101,7 @@ export class DeezerService {
       try {
         const searchQuery = searchTerms[Math.floor(Math.random() * searchTerms.length)];
         
-        console.log(`Searching for tracks with term: "${searchQuery}" (attempt ${attempts})`);
+        console.log(`Searching for tracks with genre-based term: "${searchQuery}" (attempt ${attempts})`);
         
         const { data, error } = await supabase.functions.invoke('deezer-search', {
           body: { query: searchQuery, limit: 50 }
