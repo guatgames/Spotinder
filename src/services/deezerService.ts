@@ -67,33 +67,17 @@ export class DeezerService {
     let attempts = 0;
     const maxAttempts = 10;
     
-    // If user has favorite artists, build genre-based search terms
-    let searchTerms: string[];
+    // Use broad genre search terms to get variety of artists
+    // This provides diverse recommendations instead of only the selected artists
+    const searchTerms = [
+      'pop music', 'rock music', 'indie music', 'electronic music', 'hip hop',
+      'latin music', 'reggaeton', 'rap', 'r&b', 'soul', 'jazz', 'blues',
+      'alternative', 'dance music', 'edm', 'house music', 'folk',
+      'country', 'metal', 'punk', 'acoustic', 'chill music', 'trap',
+      'funk', 'disco', 'techno', 'dubstep', 'ambient', 'classical pop'
+    ];
     
-    if (favoriteArtists && favoriteArtists.length > 0) {
-      // Create search terms using artist names combined with genre keywords
-      // This helps find similar artists and tracks in the same genre
-      const genreKeywords = ['similar', 'like', 'style', 'type', 'music', 'sound'];
-      searchTerms = [];
-      
-      favoriteArtists.forEach(artist => {
-        // Add direct artist name searches
-        searchTerms.push(artist.name);
-        // Add genre-style searches
-        const randomKeyword = genreKeywords[Math.floor(Math.random() * genreKeywords.length)];
-        searchTerms.push(`${artist.name} ${randomKeyword}`);
-      });
-      
-      console.log('Using genre-based search terms from favorite artists:', searchTerms.join(', '));
-    } else {
-      // Fallback to popular genre-based search terms
-      searchTerms = [
-        'pop music', 'rock music', 'indie music', 'electronic music', 'hip hop',
-        'latin music', 'reggaeton', 'rap', 'r&b', 'soul', 'jazz', 'blues',
-        'alternative', 'dance music', 'edm', 'house music', 'folk',
-        'country', 'metal', 'punk', 'acoustic', 'chill music'
-      ];
-    }
+    console.log('Using diverse genre-based search for variety of artists');
     
     while (attempts < maxAttempts) {
       attempts++;
