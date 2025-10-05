@@ -5,6 +5,7 @@ import { WelcomeScreen } from "@/components/WelcomeScreen";
 import { DeezerService, Artist } from "@/services/deezerService";
 import { SpotifyAuthService, SpotifyTrack } from "@/services/spotifyAuthService";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 import demoAlbumCover from "@/assets/demo-album-cover.jpg";
 
 export interface Song {
@@ -27,6 +28,8 @@ const Index = () => {
   const [useSpotify, setUseSpotify] = useState(false);
   const [spotifyRecommendations, setSpotifyRecommendations] = useState<SpotifyTrack[]>([]);
   const [currentSpotifyIndex, setCurrentSpotifyIndex] = useState(0);
+  const [noAuthRecommendations, setNoAuthRecommendations] = useState<SpotifyTrack[]>([]);
+  const [currentNoAuthIndex, setCurrentNoAuthIndex] = useState(0);
   const { toast } = useToast();
 
   // Check for Spotify callback on mount
@@ -71,7 +74,7 @@ const Index = () => {
 
   useEffect(() => {
     if (!showWelcome && !showPreferences && !useSpotify && userPreferences) {
-      loadRandomSong();
+      loadNoAuthSpotifyRecommendations();
     }
   }, [showWelcome, showPreferences, userPreferences, useSpotify]);
 
@@ -141,6 +144,62 @@ const Index = () => {
     }
   };
 
+  const loadNoAuthSpotifyRecommendations = async () => {
+    if (!userPreferences || userPreferences.length === 0) {
+      setError("No se seleccionaron artistas");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const artistNames = userPreferences.map(artist => artist.name);
+      console.log('Getting recommendations for artists:', artistNames);
+      
+      const { data, error: functionError } = await supabase.functions.invoke(
+        'spotify-recommendations-no-auth',
+        {
+          body: { artistNames }
+        }
+      );
+
+      if (functionError) {
+        throw functionError;
+      }
+
+      const tracks = data.tracks || [];
+      console.log('Got recommendations without auth:', tracks.length);
+      
+      setNoAuthRecommendations(tracks);
+      setCurrentNoAuthIndex(0);
+      
+      // Load first song from Deezer
+      if (tracks.length > 0) {
+        await loadSongFromSpotifyTrack(tracks[0]);
+      } else {
+        setError("No se encontraron recomendaciones");
+      }
+    } catch (err) {
+      setError("Error al cargar recomendaciones");
+      console.error("Error loading no-auth Spotify recommendations:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadNextNoAuthRecommendation = async () => {
+    const nextIndex = currentNoAuthIndex + 1;
+    
+    if (nextIndex >= noAuthRecommendations.length) {
+      // No more recommendations, reload
+      await loadNoAuthSpotifyRecommendations();
+    } else {
+      setCurrentNoAuthIndex(nextIndex);
+      await loadSongFromSpotifyTrack(noAuthRecommendations[nextIndex]);
+    }
+  };
+
   const loadRandomSong = async () => {
     try {
       setLoading(true);
@@ -167,7 +226,7 @@ const Index = () => {
     if (useSpotify) {
       await loadNextSpotifyRecommendation();
     } else {
-      await loadRandomSong();
+      await loadNextNoAuthRecommendation();
     }
   };
 
@@ -176,7 +235,7 @@ const Index = () => {
     if (useSpotify) {
       await loadNextSpotifyRecommendation();
     } else {
-      await loadRandomSong();
+      await loadNextNoAuthRecommendation();
     }
   };
 
