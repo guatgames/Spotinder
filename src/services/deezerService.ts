@@ -177,6 +177,40 @@ export class DeezerService {
     }
   }
 
+  // Get related artists using Deezer API
+  async getRelatedArtists(artistId: string): Promise<Artist[]> {
+    try {
+      const response = await fetch(`https://api.deezer.com/artist/${artistId}/related`);
+      const data = await response.json();
+      
+      if (data.data && Array.isArray(data.data)) {
+        return this.formatArtists(data.data);
+      }
+      
+      return [];
+    } catch (error) {
+      console.error('Error getting related artists:', error);
+      return [];
+    }
+  }
+
+  // Get tracks from an artist
+  async getArtistTracks(artistId: string, limit: number = 50): Promise<Song[]> {
+    try {
+      const response = await fetch(`https://api.deezer.com/artist/${artistId}/top?limit=${limit}`);
+      const data = await response.json();
+      
+      if (data.data && Array.isArray(data.data)) {
+        return this.formatTracks(data.data);
+      }
+      
+      return [];
+    } catch (error) {
+      console.error('Error getting artist tracks:', error);
+      return [];
+    }
+  }
+
   // Format artist data
   private formatArtists(artists: any[]): Artist[] {
     return artists.map(artist => ({

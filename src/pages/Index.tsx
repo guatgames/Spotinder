@@ -25,8 +25,8 @@ const Index = () => {
   const [showWelcome, setShowWelcome] = useState(true);
   const [showPreferences, setShowPreferences] = useState(false);
   const [useSpotify, setUseSpotify] = useState(false);
-  const [spotifyRecommendations, setSpotifyRecommendations] = useState<SpotifyTrack[]>([]);
-  const [currentSpotifyIndex, setCurrentSpotifyIndex] = useState(0);
+  const [deezerRelatedSongs, setDeezerRelatedSongs] = useState<Song[]>([]);
+  const [currentDeezerIndex, setCurrentDeezerIndex] = useState(0);
   const { toast } = useToast();
 
   // Check for Spotify callback on mount
@@ -60,84 +60,78 @@ const Index = () => {
 
       setUseSpotify(true);
       setShowWelcome(false);
+      setShowPreferences(true); // Show preferences to get favorite artists
       
       // Clean URL
       window.history.replaceState({}, '', '/');
-      
-      // Load Spotify recommendations
-      loadSpotifyRecommendations();
     }
   }, []);
 
   useEffect(() => {
-    if (!showWelcome && !showPreferences && !useSpotify && userPreferences) {
-      loadRandomSong();
+    if (!showWelcome && !showPreferences && userPreferences) {
+      if (useSpotify) {
+        loadDeezerRelatedRecommendations();
+      } else {
+        loadRandomSong();
+      }
     }
   }, [showWelcome, showPreferences, userPreferences, useSpotify]);
 
-  const loadSpotifyRecommendations = async () => {
+  const loadDeezerRelatedRecommendations = async () => {
     try {
       setLoading(true);
       setError(null);
       
-      const spotifyService = SpotifyAuthService.getInstance();
-      const recommendations = await spotifyService.getRecommendations();
-      
-      console.log('Got Spotify recommendations:', recommendations.length);
-      setSpotifyRecommendations(recommendations);
-      setCurrentSpotifyIndex(0);
-      
-      // Load first song from Deezer
-      if (recommendations.length > 0) {
-        await loadSongFromSpotifyTrack(recommendations[0]);
-      } else {
-        setError("No se encontraron recomendaciones de Spotify");
+      if (!userPreferences || userPreferences.length === 0) {
+        setError("No hay artistas seleccionados");
+        return;
       }
-    } catch (err) {
-      setError("Error al cargar recomendaciones de Spotify");
-      console.error("Error loading Spotify recommendations:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
 
-  const loadSongFromSpotifyTrack = async (spotifyTrack: SpotifyTrack) => {
-    try {
-      setLoading(true);
       const deezerService = DeezerService.getInstance();
+      const allRelatedSongs: Song[] = [];
       
-      // Search for this track in Deezer
-      const artistName = spotifyTrack.artists[0]?.name || '';
-      const deezerSong = await deezerService.searchSpecificTrack(
-        spotifyTrack.name,
-        artistName
-      );
-      
-      if (deezerSong) {
-        console.log('Found song in Deezer:', deezerSong.name);
-        setCurrentSong(deezerSong);
-      } else {
-        // If not found in Deezer, skip to next
-        console.log('Song not found in Deezer, trying next...');
-        await loadNextSpotifyRecommendation();
+      // Get related artists for each favorite artist
+      for (const favoriteArtist of userPreferences) {
+        console.log('Getting related artists for:', favoriteArtist.name);
+        const relatedArtists = await deezerService.getRelatedArtists(favoriteArtist.id);
+        
+        // Get songs from each related artist
+        for (const relatedArtist of relatedArtists.slice(0, 3)) { // Limit to 3 related artists per favorite
+          const tracks = await deezerService.getArtistTracks(relatedArtist.id, 10);
+          allRelatedSongs.push(...tracks);
+        }
       }
+      
+      if (allRelatedSongs.length === 0) {
+        setError("No se encontraron canciones relacionadas");
+        return;
+      }
+
+      // Shuffle songs for variety
+      const shuffled = allRelatedSongs.sort(() => Math.random() - 0.5);
+      console.log('Loaded', shuffled.length, 'related songs from Deezer');
+      
+      setDeezerRelatedSongs(shuffled);
+      setCurrentDeezerIndex(0);
+      setCurrentSong(shuffled[0]);
+      
     } catch (err) {
-      console.error('Error loading song from Spotify track:', err);
-      await loadNextSpotifyRecommendation();
+      setError("Error al cargar recomendaciones");
+      console.error("Error loading Deezer related recommendations:", err);
     } finally {
       setLoading(false);
     }
   };
 
-  const loadNextSpotifyRecommendation = async () => {
-    const nextIndex = currentSpotifyIndex + 1;
+  const loadNextDeezerRelated = async () => {
+    const nextIndex = currentDeezerIndex + 1;
     
-    if (nextIndex >= spotifyRecommendations.length) {
-      // No more recommendations, reload
-      await loadSpotifyRecommendations();
+    if (nextIndex >= deezerRelatedSongs.length) {
+      // No more songs, reload
+      await loadDeezerRelatedRecommendations();
     } else {
-      setCurrentSpotifyIndex(nextIndex);
-      await loadSongFromSpotifyTrack(spotifyRecommendations[nextIndex]);
+      setCurrentDeezerIndex(nextIndex);
+      setCurrentSong(deezerRelatedSongs[nextIndex]);
     }
   };
 
@@ -165,7 +159,7 @@ const Index = () => {
   const handleLike = async (song: Song) => {
     console.log("Liked song:", song.name);
     if (useSpotify) {
-      await loadNextSpotifyRecommendation();
+      await loadNextDeezerRelated();
     } else {
       await loadRandomSong();
     }
@@ -174,7 +168,7 @@ const Index = () => {
   const handleDislike = async (song: Song) => {
     console.log("Disliked song:", song.name);
     if (useSpotify) {
-      await loadNextSpotifyRecommendation();
+      await loadNextDeezerRelated();
     } else {
       await loadRandomSong();
     }
@@ -206,6 +200,11 @@ const Index = () => {
     setUserPreferences(selectedArtists);
     setShowPreferences(false);
     console.log("User selected artists:", selectedArtists.map(a => a.name).join(", "));
+    
+    // If using Spotify, load Deezer related recommendations after preferences are set
+    if (useSpotify) {
+      loadDeezerRelatedRecommendations();
+    }
   };
 
   // Show welcome screen first
