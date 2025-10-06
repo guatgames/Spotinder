@@ -62,6 +62,40 @@ export class DeezerService {
     }
   }
 
+  // Get related artists for a given artist ID
+  async getRelatedArtists(artistId: string): Promise<Artist[]> {
+    try {
+      const response = await fetch(`https://api.deezer.com/artist/${artistId}/related`);
+      
+      if (!response.ok) {
+        throw new Error(`Failed to get related artists: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      return this.formatArtists(data.data || []);
+    } catch (error) {
+      console.error('Error getting related artists:', error);
+      return [];
+    }
+  }
+
+  // Get top tracks for a given artist ID
+  async getArtistTracks(artistId: string, limit: number = 10): Promise<Song[]> {
+    try {
+      const response = await fetch(`https://api.deezer.com/artist/${artistId}/top?limit=${limit}`);
+      
+      if (!response.ok) {
+        throw new Error(`Failed to get artist tracks: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      return this.formatTracks(data.data || []);
+    } catch (error) {
+      console.error('Error getting artist tracks:', error);
+      return [];
+    }
+  }
+
   // Get random track with preview URL based on user's favorite artists
   async getRandomTrack(favoriteArtists?: Artist[]): Promise<Song> {
     let attempts = 0;

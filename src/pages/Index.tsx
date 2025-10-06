@@ -27,6 +27,8 @@ const Index = () => {
   const [useSpotify, setUseSpotify] = useState(false);
   const [spotifyRecommendations, setSpotifyRecommendations] = useState<SpotifyTrack[]>([]);
   const [currentSpotifyIndex, setCurrentSpotifyIndex] = useState(0);
+  const [deezerRelatedSongs, setDeezerRelatedSongs] = useState<Song[]>([]);
+  const [currentDeezerIndex, setCurrentDeezerIndex] = useState(0);
   const { toast } = useToast();
 
   // Check for Spotify callback on mount
@@ -71,7 +73,7 @@ const Index = () => {
 
   useEffect(() => {
     if (!showWelcome && !showPreferences && !useSpotify && userPreferences) {
-      loadRandomSong();
+      loadDeezerRelatedRecommendations();
     }
   }, [showWelcome, showPreferences, userPreferences, useSpotify]);
 
@@ -141,24 +143,68 @@ const Index = () => {
     }
   };
 
-  const loadRandomSong = async () => {
+  const loadDeezerRelatedRecommendations = async () => {
     try {
       setLoading(true);
       setError(null);
       
+      if (!userPreferences || userPreferences.length === 0) {
+        setError("No hay artistas seleccionados");
+        return;
+      }
+
       const deezerService = DeezerService.getInstance();
-      const randomSong = await deezerService.getRandomTrack(userPreferences || undefined);
+      const allSongs: Song[] = [];
       
-      console.log(`Loaded song:`, randomSong.name, 'by', randomSong.artist);
-      console.log(`Has preview:`, randomSong.preview_url ? 'Yes' : 'No');
+      console.log('Loading recommendations from related artists...');
       
-      setCurrentSong(randomSong);
+      // For each favorite artist, get related artists
+      for (const favoriteArtist of userPreferences) {
+        console.log(`Getting related artists for: ${favoriteArtist.name}`);
+        const relatedArtists = await deezerService.getRelatedArtists(favoriteArtist.id);
+        
+        console.log(`Found ${relatedArtists.length} related artists`);
+        
+        // Get top tracks from first few related artists (limit to avoid too many requests)
+        const limitedRelatedArtists = relatedArtists.slice(0, 3);
+        
+        for (const relatedArtist of limitedRelatedArtists) {
+          console.log(`Getting tracks from: ${relatedArtist.name}`);
+          const tracks = await deezerService.getArtistTracks(relatedArtist.id, 5);
+          allSongs.push(...tracks);
+        }
+      }
+      
+      if (allSongs.length === 0) {
+        setError("No se encontraron canciones de artistas relacionados");
+        return;
+      }
+      
+      // Shuffle songs for variety
+      const shuffledSongs = allSongs.sort(() => Math.random() - 0.5);
+      
+      console.log(`Loaded ${shuffledSongs.length} songs from related artists`);
+      setDeezerRelatedSongs(shuffledSongs);
+      setCurrentDeezerIndex(0);
+      setCurrentSong(shuffledSongs[0]);
       
     } catch (err) {
-      setError("Error loading song. Please try again.");
-      console.error("Error loading song:", err);
+      setError("Error al cargar recomendaciones. Intenta de nuevo.");
+      console.error("Error loading Deezer related recommendations:", err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadNextDeezerRelated = async () => {
+    const nextIndex = currentDeezerIndex + 1;
+    
+    if (nextIndex >= deezerRelatedSongs.length) {
+      // No more songs, reload recommendations
+      await loadDeezerRelatedRecommendations();
+    } else {
+      setCurrentDeezerIndex(nextIndex);
+      setCurrentSong(deezerRelatedSongs[nextIndex]);
     }
   };
 
@@ -167,7 +213,7 @@ const Index = () => {
     if (useSpotify) {
       await loadNextSpotifyRecommendation();
     } else {
-      await loadRandomSong();
+      await loadNextDeezerRelated();
     }
   };
 
@@ -176,7 +222,7 @@ const Index = () => {
     if (useSpotify) {
       await loadNextSpotifyRecommendation();
     } else {
-      await loadRandomSong();
+      await loadNextDeezerRelated();
     }
   };
 
@@ -240,7 +286,7 @@ const Index = () => {
         <div className="text-center">
           <p className="text-destructive mb-4">{error}</p>
           <button 
-            onClick={loadRandomSong}
+            onClick={useSpotify ? loadSpotifyRecommendations : loadDeezerRelatedRecommendations}
             className="px-6 py-2 bg-gradient-primary text-music-text-primary rounded-lg font-semibold hover:opacity-90 transition-opacity"
           >
             Try Again
