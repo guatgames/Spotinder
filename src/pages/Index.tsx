@@ -69,13 +69,9 @@ const Index = () => {
 
   useEffect(() => {
     if (!showWelcome && !showPreferences && userPreferences) {
-      if (useSpotify) {
-        loadDeezerRelatedRecommendations();
-      } else {
-        loadRandomSong();
-      }
+      loadDeezerRelatedRecommendations();
     }
-  }, [showWelcome, showPreferences, userPreferences, useSpotify]);
+  }, [showWelcome, showPreferences, userPreferences]);
 
   const loadDeezerRelatedRecommendations = async () => {
     try {
@@ -158,20 +154,12 @@ const Index = () => {
 
   const handleLike = async (song: Song) => {
     console.log("Liked song:", song.name);
-    if (useSpotify) {
-      await loadNextDeezerRelated();
-    } else {
-      await loadRandomSong();
-    }
+    await loadNextDeezerRelated();
   };
 
   const handleDislike = async (song: Song) => {
     console.log("Disliked song:", song.name);
-    if (useSpotify) {
-      await loadNextDeezerRelated();
-    } else {
-      await loadRandomSong();
-    }
+    await loadNextDeezerRelated();
   };
 
   const handleSpotifyLogin = async () => {
@@ -200,11 +188,6 @@ const Index = () => {
     setUserPreferences(selectedArtists);
     setShowPreferences(false);
     console.log("User selected artists:", selectedArtists.map(a => a.name).join(", "));
-    
-    // If using Spotify, load Deezer related recommendations after preferences are set
-    if (useSpotify) {
-      loadDeezerRelatedRecommendations();
-    }
   };
 
   // Show welcome screen first
