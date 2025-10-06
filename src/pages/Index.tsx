@@ -60,18 +60,89 @@ const Index = () => {
 
       setUseSpotify(true);
       setShowWelcome(false);
-      setShowPreferences(true); // Show preferences to get favorite artists
       
       // Clean URL
       window.history.replaceState({}, '', '/');
+      
+      // Load Spotify recommendations
+      loadSpotifyRecommendations();
     }
   }, []);
 
   useEffect(() => {
-    if (!showWelcome && !showPreferences && userPreferences) {
+    if (!showWelcome && !showPreferences && !useSpotify && userPreferences) {
       loadDeezerRelatedRecommendations();
     }
-  }, [showWelcome, showPreferences, userPreferences]);
+  }, [showWelcome, showPreferences, userPreferences, useSpotify]);
+
+  const loadSpotifyRecommendations = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const spotifyService = SpotifyAuthService.getInstance();
+      const recommendations = await spotifyService.getRecommendations();
+      
+      console.log('Got Spotify recommendations:', recommendations.length);
+      
+      // Load first song from Deezer
+      if (recommendations.length > 0) {
+        await loadSongFromSpotifyTrack(recommendations[0], recommendations);
+      } else {
+        setError("No se encontraron recomendaciones de Spotify");
+      }
+    } catch (err) {
+      setError("Error al cargar recomendaciones de Spotify");
+      console.error("Error loading Spotify recommendations:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadSongFromSpotifyTrack = async (spotifyTrack: SpotifyTrack, remainingTracks: SpotifyTrack[]) => {
+    try {
+      setLoading(true);
+      const deezerService = DeezerService.getInstance();
+      
+      // Search for this track in Deezer
+      const artistName = spotifyTrack.artists[0]?.name || '';
+      const deezerSong = await deezerService.searchSpecificTrack(
+        spotifyTrack.name,
+        artistName
+      );
+      
+      if (deezerSong) {
+        console.log('Found song in Deezer:', deezerSong.name);
+        setCurrentSong(deezerSong);
+        // Store remaining tracks for next
+        const nextTracks = remainingTracks.slice(1);
+        if (nextTracks.length > 0) {
+          setDeezerRelatedSongs(nextTracks.map(t => ({
+            id: t.id,
+            name: t.name,
+            artist: t.artists[0]?.name || '',
+            album: t.album?.name || '',
+            image: t.album?.images[0]?.url || '',
+            preview_url: null,
+            external_url: t.external_urls?.spotify || ''
+          })));
+        }
+      } else {
+        // If not found in Deezer, skip to next
+        console.log('Song not found in Deezer, trying next...');
+        if (remainingTracks.length > 1) {
+          await loadSongFromSpotifyTrack(remainingTracks[1], remainingTracks.slice(1));
+        }
+      }
+    } catch (err) {
+      console.error('Error loading song from Spotify track:', err);
+      if (remainingTracks.length > 1) {
+        await loadSongFromSpotifyTrack(remainingTracks[1], remainingTracks.slice(1));
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const loadDeezerRelatedRecommendations = async () => {
     try {
@@ -154,12 +225,20 @@ const Index = () => {
 
   const handleLike = async (song: Song) => {
     console.log("Liked song:", song.name);
-    await loadNextDeezerRelated();
+    if (useSpotify) {
+      await loadNextDeezerRelated();
+    } else {
+      await loadNextDeezerRelated();
+    }
   };
 
   const handleDislike = async (song: Song) => {
     console.log("Disliked song:", song.name);
-    await loadNextDeezerRelated();
+    if (useSpotify) {
+      await loadNextDeezerRelated();
+    } else {
+      await loadNextDeezerRelated();
+    }
   };
 
   const handleSpotifyLogin = async () => {
