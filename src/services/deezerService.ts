@@ -62,37 +62,26 @@ export class DeezerService {
     }
   }
 
-  // Get related artists for a given artist ID
-  async getRelatedArtists(artistId: string): Promise<Artist[]> {
+  // Get related artists and their top tracks using Edge Function
+  async getRelatedArtistsWithTracks(artistId: string, limit: number = 5): Promise<{ artists: Artist[], tracks: Song[] }> {
     try {
-      const response = await fetch(`https://api.deezer.com/artist/${artistId}/related`);
-      
-      if (!response.ok) {
-        throw new Error(`Failed to get related artists: ${response.statusText}`);
+      const { data, error } = await supabase.functions.invoke('deezer-related-tracks', {
+        body: { artistId, limit }
+      });
+
+      if (error) {
+        throw error;
       }
 
-      const data = await response.json();
-      return this.formatArtists(data.data || []);
-    } catch (error) {
-      console.error('Error getting related artists:', error);
-      return [];
-    }
-  }
+      console.log(`Got ${data.tracks?.length || 0} tracks from related artists via Edge Function`);
 
-  // Get top tracks for a given artist ID
-  async getArtistTracks(artistId: string, limit: number = 10): Promise<Song[]> {
-    try {
-      const response = await fetch(`https://api.deezer.com/artist/${artistId}/top?limit=${limit}`);
-      
-      if (!response.ok) {
-        throw new Error(`Failed to get artist tracks: ${response.statusText}`);
-      }
-
-      const data = await response.json();
-      return this.formatTracks(data.data || []);
+      return {
+        artists: this.formatArtists(data.relatedArtists || []),
+        tracks: this.formatTracks(data.tracks || [])
+      };
     } catch (error) {
-      console.error('Error getting artist tracks:', error);
-      return [];
+      console.error('Error getting related artists with tracks:', error);
+      return { artists: [], tracks: [] };
     }
   }
 

@@ -158,21 +158,13 @@ const Index = () => {
       
       console.log('Loading recommendations from related artists...');
       
-      // For each favorite artist, get related artists
+      // For each favorite artist, get related artists and their tracks
       for (const favoriteArtist of userPreferences) {
-        console.log(`Getting related artists for: ${favoriteArtist.name}`);
-        const relatedArtists = await deezerService.getRelatedArtists(favoriteArtist.id);
+        console.log(`Getting related tracks for: ${favoriteArtist.name}`);
+        const { tracks } = await deezerService.getRelatedArtistsWithTracks(favoriteArtist.id, 5);
         
-        console.log(`Found ${relatedArtists.length} related artists`);
-        
-        // Get top tracks from first few related artists (limit to avoid too many requests)
-        const limitedRelatedArtists = relatedArtists.slice(0, 3);
-        
-        for (const relatedArtist of limitedRelatedArtists) {
-          console.log(`Getting tracks from: ${relatedArtist.name}`);
-          const tracks = await deezerService.getArtistTracks(relatedArtist.id, 5);
-          allSongs.push(...tracks);
-        }
+        console.log(`Found ${tracks.length} tracks from related artists`);
+        allSongs.push(...tracks);
       }
       
       if (allSongs.length === 0) {
