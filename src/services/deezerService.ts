@@ -30,6 +30,29 @@ export class DeezerService {
     }
   }
 
+  // Get related artists and their top tracks using Edge Function
+  async getRelatedArtistsWithTracks(artistId: string, limit: number = 5): Promise<{ artists: Artist[], tracks: Song[] }> {
+    try {
+      const { data, error } = await supabase.functions.invoke('deezer-related-tracks', {
+        body: { artistId, limit }
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      console.log(`Got ${data.tracks?.length || 0} tracks from related artists via Edge Function`);
+
+      return {
+        artists: this.formatArtists(data.relatedArtists || []),
+        tracks: this.formatTracks(data.tracks || [])
+      };
+    } catch (error) {
+      console.error('Error getting related artists with tracks:', error);
+      return { artists: [], tracks: [] };
+    }
+  }
+
   // Get random track with preview URL based on user's favorite artists
   async getRandomTrack(favoriteArtists?: Artist[]): Promise<Song> {
     let attempts = 0;
