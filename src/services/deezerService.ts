@@ -30,38 +30,6 @@ export class DeezerService {
     }
   }
 
-  // Search for a specific track by name and artist in Deezer
-  async searchSpecificTrack(trackName: string, artistName: string): Promise<Song | null> {
-    try {
-      const query = `${trackName} ${artistName}`;
-      console.log('Searching Deezer for:', query);
-      
-      const { data, error } = await supabase.functions.invoke('deezer-search', {
-        body: { query, limit: 5 }
-      });
-
-      if (error) {
-        throw error;
-      }
-
-      const tracks = this.formatTracks(data.data || []);
-      
-      // Return first result with preview
-      const trackWithPreview = tracks.find(track => track.preview_url);
-      
-      if (trackWithPreview) {
-        console.log('Found Deezer track:', trackWithPreview.name, 'by', trackWithPreview.artist);
-        return trackWithPreview;
-      }
-
-      console.log('No Deezer track found with preview for:', query);
-      return null;
-    } catch (error) {
-      console.error('Deezer specific search error:', error);
-      return null;
-    }
-  }
-
   // Get related artists and their top tracks using Edge Function
   async getRelatedArtistsWithTracks(artistId: string, limit: number = 5): Promise<{ artists: Artist[], tracks: Song[] }> {
     try {
@@ -85,36 +53,48 @@ export class DeezerService {
     }
   }
 
+  // Llama a la Edge Function de Deezer para obtener recomendaciones
+  async getTrackRecommendations(params: { trackId?: number; trackName?: string; limit?: number }): Promise<{ tracks: Song[] }> {
+    try {
+      const { trackId, trackName, limit = 5 } = params;
+
+      const { data, error } = await supabase.functions.invoke('deezer-track-recommendations', {
+        body: { trackId, trackName, limit }
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      console.log(`Got ${data.recommendations?.length || 0} recommended tracks via Edge Function`);
+
+      return {
+        tracks: this.formatTracks(data.recommendations || [])
+      };
+    } catch (error) {
+      console.error('Error getting track recommendations:', error);
+      return { tracks: [] };
+    }
+  }
+
   // Get random track with preview URL based on user's favorite artists
   async getRandomTrack(favoriteArtists?: Artist[]): Promise<Song> {
     let attempts = 0;
     const maxAttempts = 10;
     
-    // If user has favorite artists, build genre-based search terms
+    // If user has favorite artists, use them for personalized recommendations
     let searchTerms: string[];
     
     if (favoriteArtists && favoriteArtists.length > 0) {
-      // Create search terms using artist names combined with genre keywords
-      // This helps find similar artists and tracks in the same genre
-      const genreKeywords = ['similar', 'like', 'style', 'type', 'music', 'sound'];
-      searchTerms = [];
-      
-      favoriteArtists.forEach(artist => {
-        // Add direct artist name searches
-        searchTerms.push(artist.name);
-        // Add genre-style searches
-        const randomKeyword = genreKeywords[Math.floor(Math.random() * genreKeywords.length)];
-        searchTerms.push(`${artist.name} ${randomKeyword}`);
-      });
-      
-      console.log('Using genre-based search terms from favorite artists:', searchTerms.join(', '));
+      // Use artist names for more personalized results
+      searchTerms = favoriteArtists.map(artist => artist.name);
+      console.log('Using personalized search terms based on favorite artists:', searchTerms.join(', '));
     } else {
-      // Fallback to popular genre-based search terms
+      // Fallback to popular search terms
       searchTerms = [
-        'pop music', 'rock music', 'indie music', 'electronic music', 'hip hop',
-        'latin music', 'reggaeton', 'rap', 'r&b', 'soul', 'jazz', 'blues',
-        'alternative', 'dance music', 'edm', 'house music', 'folk',
-        'country', 'metal', 'punk', 'acoustic', 'chill music'
+        'quiero', 'night', 'besos', 'heart', 'dream', 'amor', 'life', 'dance', 
+        'rock', 'pop', 'soul', 'blues', 'summer', 'winter', 'fire', 'water',
+        'happy', 'sad', 'stars', 'moon', 'sun', 'rain', 'freedom', 'hope'
       ];
     }
     
@@ -124,7 +104,7 @@ export class DeezerService {
       try {
         const searchQuery = searchTerms[Math.floor(Math.random() * searchTerms.length)];
         
-        console.log(`Searching for tracks with genre-based term: "${searchQuery}" (attempt ${attempts})`);
+        console.log(`Searching for tracks with term: "${searchQuery}" (attempt ${attempts})`);
         
         const { data, error } = await supabase.functions.invoke('deezer-search', {
           body: { query: searchQuery, limit: 50 }

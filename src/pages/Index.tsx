@@ -1,10 +1,7 @@
 import { useState, useEffect } from "react";
 import { SongCard } from "@/components/SongCard";
 import { MusicPreferences } from "@/components/MusicPreferences";
-import { WelcomeScreen } from "@/components/WelcomeScreen";
 import { DeezerService, Artist } from "@/services/deezerService";
-import { SpotifyAuthService, SpotifyTrack } from "@/services/spotifyAuthService";
-import { useToast } from "@/hooks/use-toast";
 import demoAlbumCover from "@/assets/demo-album-cover.jpg";
 
 export interface Song {
@@ -22,124 +19,35 @@ const Index = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [userPreferences, setUserPreferences] = useState<Artist[] | null>(null);
-  const [showWelcome, setShowWelcome] = useState(true);
-  const [showPreferences, setShowPreferences] = useState(false);
-  const [useSpotify, setUseSpotify] = useState(false);
-  const [spotifyRecommendations, setSpotifyRecommendations] = useState<SpotifyTrack[]>([]);
-  const [currentSpotifyIndex, setCurrentSpotifyIndex] = useState(0);
+  const [showPreferences, setShowPreferences] = useState(true);
   const [deezerRelatedSongs, setDeezerRelatedSongs] = useState<Song[]>([]);
   const [currentDeezerIndex, setCurrentDeezerIndex] = useState(0);
-  const { toast } = useToast();
-
-  // Check for Spotify callback on mount
-  useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const spotifyToken = urlParams.get('spotify_token');
-    const spotifyRefresh = urlParams.get('spotify_refresh');
-    const spotifyExpires = urlParams.get('spotify_expires');
-    const spotifyError = urlParams.get('spotify_error');
-
-    if (spotifyError) {
-      toast({
-        title: "Error de autenticación",
-        description: "No se pudo conectar con Spotify. Intenta de nuevo.",
-        variant: "destructive"
-      });
-      setShowWelcome(true);
-      // Clean URL
-      window.history.replaceState({}, '', '/');
-      return;
-    }
-
-    if (spotifyToken && spotifyRefresh && spotifyExpires) {
-      const spotifyService = SpotifyAuthService.getInstance();
-      spotifyService.setTokens({
-        accessToken: spotifyToken,
-        refreshToken: spotifyRefresh,
-        expiresIn: parseInt(spotifyExpires),
-        obtainedAt: Date.now()
-      });
-
-      setUseSpotify(true);
-      setShowWelcome(false);
-      
-      // Clean URL
-      window.history.replaceState({}, '', '/');
-      
-      // Load Spotify recommendations
-      loadSpotifyRecommendations();
-    }
-  }, []);
+  const [likedSongs, setLikedSongs] = useState<Song[]>([]);
 
   useEffect(() => {
-    if (!showWelcome && !showPreferences && !useSpotify && userPreferences) {
+    if (!showPreferences && userPreferences) {
       loadDeezerRelatedRecommendations();
     }
-  }, [showWelcome, showPreferences, userPreferences, useSpotify]);
+  }, [showPreferences, userPreferences]);
 
-  const loadSpotifyRecommendations = async () => {
+  const loadRandomSong = async () => {
     try {
       setLoading(true);
       setError(null);
       
-      const spotifyService = SpotifyAuthService.getInstance();
-      const recommendations = await spotifyService.getRecommendations();
-      
-      console.log('Got Spotify recommendations:', recommendations.length);
-      setSpotifyRecommendations(recommendations);
-      setCurrentSpotifyIndex(0);
-      
-      // Load first song from Deezer
-      if (recommendations.length > 0) {
-        await loadSongFromSpotifyTrack(recommendations[0]);
-      } else {
-        setError("No se encontraron recomendaciones de Spotify");
-      }
-    } catch (err) {
-      setError("Error al cargar recomendaciones de Spotify");
-      console.error("Error loading Spotify recommendations:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const loadSongFromSpotifyTrack = async (spotifyTrack: SpotifyTrack) => {
-    try {
-      setLoading(true);
       const deezerService = DeezerService.getInstance();
+      const randomSong = await deezerService.getRandomTrack(userPreferences || undefined);
       
-      // Search for this track in Deezer
-      const artistName = spotifyTrack.artists[0]?.name || '';
-      const deezerSong = await deezerService.searchSpecificTrack(
-        spotifyTrack.name,
-        artistName
-      );
+      console.log(`Loaded song:`, randomSong.name, 'by', randomSong.artist);
+      console.log(`Has preview:`, randomSong.preview_url ? 'Yes' : 'No');
       
-      if (deezerSong) {
-        console.log('Found song in Deezer:', deezerSong.name);
-        setCurrentSong(deezerSong);
-      } else {
-        // If not found in Deezer, skip to next
-        console.log('Song not found in Deezer, trying next...');
-        await loadNextSpotifyRecommendation();
-      }
+      setCurrentSong(randomSong);
+      
     } catch (err) {
-      console.error('Error loading song from Spotify track:', err);
-      await loadNextSpotifyRecommendation();
+      setError("Error loading song. Please try again.");
+      console.error("Error loading song:", err);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const loadNextSpotifyRecommendation = async () => {
-    const nextIndex = currentSpotifyIndex + 1;
-    
-    if (nextIndex >= spotifyRecommendations.length) {
-      // No more recommendations, reload
-      await loadSpotifyRecommendations();
-    } else {
-      setCurrentSpotifyIndex(nextIndex);
-      await loadSongFromSpotifyTrack(spotifyRecommendations[nextIndex]);
     }
   };
 
@@ -193,51 +101,40 @@ const Index = () => {
     
     if (nextIndex >= deezerRelatedSongs.length) {
       // No more songs, reload recommendations
-      await loadDeezerRelatedRecommendations();
+      await loadRecommendationsFromLiked();
     } else {
       setCurrentDeezerIndex(nextIndex);
       setCurrentSong(deezerRelatedSongs[nextIndex]);
     }
   };
+  
+  const loadRecommendationsFromLiked = async () => {
+    if (likedSongs.length === 0) return;
+
+    const deezerService = DeezerService.getInstance();
+    const allRecommendations: Song[] = [];
+
+    for (const liked of likedSongs) {
+      const { tracks } = await deezerService.getTrackRecommendations({ trackName: liked.name, limit: 5 });
+      allRecommendations.push(...tracks);
+    }
+
+    console.log("All recommendations from liked songs:", allRecommendations);
+    // Aquí puedes actualizar estado para mostrarlas en UI si quieres
+  };
 
   const handleLike = async (song: Song) => {
     console.log("Liked song:", song.name);
-    if (useSpotify) {
-      await loadNextSpotifyRecommendation();
-    } else {
-      await loadNextDeezerRelated();
-    }
-  };
 
+    setLikedSongs(prev => [...prev, song]);
+    // Here you would save the liked song to user's preferences
+    await loadNextDeezerRelated();
+  };
+//
   const handleDislike = async (song: Song) => {
     console.log("Disliked song:", song.name);
-    if (useSpotify) {
-      await loadNextSpotifyRecommendation();
-    } else {
-      await loadNextDeezerRelated();
-    }
-  };
-
-  const handleSpotifyLogin = async () => {
-    try {
-      const spotifyService = SpotifyAuthService.getInstance();
-      const authUrl = await spotifyService.initiateLogin();
-      // Redirect to Spotify login
-      window.location.href = authUrl;
-    } catch (err) {
-      toast({
-        title: "Error",
-        description: "No se pudo iniciar sesión con Spotify",
-        variant: "destructive"
-      });
-      console.error('Spotify login error:', err);
-    }
-  };
-
-  const handleContinueWithoutSpotify = () => {
-    setShowWelcome(false);
-    setShowPreferences(true);
-    setUseSpotify(false);
+    // Here you would save the disliked song to user's preferences
+    await loadNextDeezerRelated();
   };
 
   const handlePreferencesComplete = (selectedArtists: Artist[]) => {
@@ -246,17 +143,7 @@ const Index = () => {
     console.log("User selected artists:", selectedArtists.map(a => a.name).join(", "));
   };
 
-  // Show welcome screen first
-  if (showWelcome) {
-    return (
-      <WelcomeScreen
-        onSpotifyLogin={handleSpotifyLogin}
-        onContinueWithoutSpotify={handleContinueWithoutSpotify}
-      />
-    );
-  }
-
-  // Show preferences screen if not using Spotify
+  // Show preferences screen first
   if (showPreferences) {
     return <MusicPreferences onComplete={handlePreferencesComplete} />;
   }
@@ -278,7 +165,7 @@ const Index = () => {
         <div className="text-center">
           <p className="text-destructive mb-4">{error}</p>
           <button 
-            onClick={useSpotify ? loadSpotifyRecommendations : loadDeezerRelatedRecommendations}
+            onClick={loadDeezerRelatedRecommendations}
             className="px-6 py-2 bg-gradient-primary text-music-text-primary rounded-lg font-semibold hover:opacity-90 transition-opacity"
           >
             Try Again
@@ -293,7 +180,7 @@ const Index = () => {
       {/* Header */}
       <header className="p-6 text-center">
         <h1 className="text-3xl font-bold text-music-text-primary mb-2">
-          Music Discovery
+          Spofinder
         </h1>
         <p className="text-music-text-secondary">
           Swipe right if you like it, left if you don't
@@ -314,7 +201,7 @@ const Index = () => {
       {/* Footer */}
       <footer className="p-6 text-center">
         <p className="text-music-text-muted text-sm">
-          {useSpotify ? 'Powered by Spotify + Deezer API' : 'Powered by Deezer API'}
+          Powered by Deezer API
         </p>
       </footer>
     </div>
