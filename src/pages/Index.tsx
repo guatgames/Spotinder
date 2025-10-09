@@ -22,6 +22,7 @@ const Index = () => {
   const [showPreferences, setShowPreferences] = useState(true);
   const [deezerRelatedSongs, setDeezerRelatedSongs] = useState<Song[]>([]);
   const [currentDeezerIndex, setCurrentDeezerIndex] = useState(0);
+  const [likedSongs, setLikedSongs] = useState<Song[]>([]);
 
   useEffect(() => {
     if (!showPreferences && userPreferences) {
@@ -100,15 +101,32 @@ const Index = () => {
     
     if (nextIndex >= deezerRelatedSongs.length) {
       // No more songs, reload recommendations
-      await loadDeezerRelatedRecommendations();
+      await loadRecommendationsFromLiked();
     } else {
       setCurrentDeezerIndex(nextIndex);
       setCurrentSong(deezerRelatedSongs[nextIndex]);
     }
   };
+  
+  const loadRecommendationsFromLiked = async () => {
+    if (likedSongs.length === 0) return;
+
+    const deezerService = DeezerService.getInstance();
+    const allRecommendations: Song[] = [];
+
+    for (const liked of likedSongs) {
+      const { tracks } = await deezerService.getTrackRecommendations({ trackName: liked.name, limit: 5 });
+      allRecommendations.push(...tracks);
+    }
+
+    console.log("All recommendations from liked songs:", allRecommendations);
+    // Aquí puedes actualizar estado para mostrarlas en UI si quieres
+  };
 
   const handleLike = async (song: Song) => {
     console.log("Liked song:", song.name);
+
+    setLikedSongs(prev => [...prev, song]);
     // Here you would save the liked song to user's preferences
     await loadNextDeezerRelated();
   };
