@@ -53,30 +53,6 @@ export class DeezerService {
     }
   }
 
-  // Llama a la Edge Function de Deezer para obtener recomendaciones
-  async getTrackRecommendations(params: { trackId?: number; trackName?: string; limit?: number }): Promise<{ tracks: Song[] }> {
-    try {
-      const { trackId, trackName, limit = 5 } = params;
-
-      const { data, error } = await supabase.functions.invoke('deezer-track-recommendations', {
-        body: { trackId, trackName, limit }
-      });
-
-      if (error) {
-        throw error;
-      }
-
-      console.log(`Got ${data.recommendations?.length || 0} recommended tracks via Edge Function`);
-
-      return {
-        tracks: this.formatTracks(data.recommendations || [])
-      };
-    } catch (error) {
-      console.error('Error getting track recommendations:', error);
-      return { tracks: [] };
-    }
-  }
-
   // Get random track with preview URL based on user's favorite artists
   async getRandomTrack(favoriteArtists?: Artist[]): Promise<Song> {
     let attempts = 0;
