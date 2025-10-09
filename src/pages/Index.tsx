@@ -20,12 +20,10 @@ const Index = () => {
   const [error, setError] = useState<string | null>(null);
   const [userPreferences, setUserPreferences] = useState<Artist[] | null>(null);
   const [showPreferences, setShowPreferences] = useState(true);
-  const [deezerRelatedSongs, setDeezerRelatedSongs] = useState<Song[]>([]);
-  const [currentDeezerIndex, setCurrentDeezerIndex] = useState(0);
 
   useEffect(() => {
     if (!showPreferences && userPreferences) {
-      loadDeezerRelatedRecommendations();
+      loadRandomSong();
     }
   }, [showPreferences, userPreferences]);
 
@@ -50,73 +48,16 @@ const Index = () => {
     }
   };
 
-  const loadDeezerRelatedRecommendations = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      
-      if (!userPreferences || userPreferences.length === 0) {
-        setError("No hay artistas seleccionados");
-        return;
-      }
-
-      const deezerService = DeezerService.getInstance();
-      const allSongs: Song[] = [];
-      
-      console.log('Loading recommendations from related artists...');
-      
-      // For each favorite artist, get related artists and their tracks
-      for (const favoriteArtist of userPreferences) {
-        console.log(`Getting related tracks for: ${favoriteArtist.name}`);
-        const { tracks } = await deezerService.getRelatedArtistsWithTracks(favoriteArtist.id, 5);
-        
-        console.log(`Found ${tracks.length} tracks from related artists`);
-        allSongs.push(...tracks);
-      }
-      
-      if (allSongs.length === 0) {
-        setError("No se encontraron canciones de artistas relacionados");
-        return;
-      }
-      
-      // Shuffle songs for variety
-      const shuffledSongs = allSongs.sort(() => Math.random() - 0.5);
-      
-      console.log(`Loaded ${shuffledSongs.length} songs from related artists`);
-      setDeezerRelatedSongs(shuffledSongs);
-      setCurrentDeezerIndex(0);
-      setCurrentSong(shuffledSongs[0]);
-      
-    } catch (err) {
-      setError("Error al cargar recomendaciones. Intenta de nuevo.");
-      console.error("Error loading Deezer related recommendations:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const loadNextDeezerRelated = async () => {
-    const nextIndex = currentDeezerIndex + 1;
-    
-    if (nextIndex >= deezerRelatedSongs.length) {
-      // No more songs, reload recommendations
-      await loadDeezerRelatedRecommendations();
-    } else {
-      setCurrentDeezerIndex(nextIndex);
-      setCurrentSong(deezerRelatedSongs[nextIndex]);
-    }
-  };
-
   const handleLike = async (song: Song) => {
     console.log("Liked song:", song.name);
     // Here you would save the liked song to user's preferences
-    await loadNextDeezerRelated();
+    await loadRandomSong();
   };
 
   const handleDislike = async (song: Song) => {
     console.log("Disliked song:", song.name);
     // Here you would save the disliked song to user's preferences
-    await loadNextDeezerRelated();
+    await loadRandomSong();
   };
 
   const handlePreferencesComplete = (selectedArtists: Artist[]) => {
@@ -147,7 +88,7 @@ const Index = () => {
         <div className="text-center">
           <p className="text-destructive mb-4">{error}</p>
           <button 
-            onClick={loadDeezerRelatedRecommendations}
+            onClick={loadRandomSong}
             className="px-6 py-2 bg-gradient-primary text-music-text-primary rounded-lg font-semibold hover:opacity-90 transition-opacity"
           >
             Try Again
@@ -162,7 +103,7 @@ const Index = () => {
       {/* Header */}
       <header className="p-6 text-center">
         <h1 className="text-3xl font-bold text-music-text-primary mb-2">
-          Spofinder
+          Music Discovery
         </h1>
         <p className="text-music-text-secondary">
           Swipe right if you like it, left if you don't

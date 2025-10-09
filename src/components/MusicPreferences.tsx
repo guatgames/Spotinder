@@ -4,7 +4,6 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Search, X, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { relative } from "path";
 
 interface MusicPreferencesProps {
   onComplete: (selectedArtists: Artist[]) => void;
@@ -96,11 +95,6 @@ export const MusicPreferences = ({ onComplete }: MusicPreferencesProps) => {
     }
   };
 
-  const eraseSearch = () => {
-    setSearchQuery("");
-    setSearchResults([]);
-  }
-
   return (
     <div className="min-h-screen bg-gradient-bg flex items-center justify-center p-4">
       <div className="w-full max-w-4xl">
@@ -118,16 +112,12 @@ export const MusicPreferences = ({ onComplete }: MusicPreferencesProps) => {
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-music-text-muted" size={20} />
             <Input
-              id="search"
               type="text"
               placeholder="Busca tu artista favorito..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-10 bg-music-bg-card border-border text-music-text-primary placeholder:text-music-text-muted"
             />
-           <X size={16} 
-              style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)" }} 
-              onClick={eraseSearch}/>
           </div>
 
           {/* Search Results */}
