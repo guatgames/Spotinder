@@ -183,7 +183,7 @@ const Index = () => {
           Spofinder
         </h1>
         <p className="text-music-text-secondary">
-          Swipe right if you like it, left if you don't
+          Swipe right if you like it, left if you don't like
         </p>
       </header>
 
