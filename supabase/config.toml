@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.deezer-artist-search]
 verify_jwt = false
+
+[functions.deezer-track-recommendations]
+verify_jwt = false
