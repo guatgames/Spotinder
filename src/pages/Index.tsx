@@ -20,13 +20,10 @@ const Index = () => {
   const [error, setError] = useState<string | null>(null);
   const [userPreferences, setUserPreferences] = useState<Artist[] | null>(null);
   const [showPreferences, setShowPreferences] = useState(true);
-  const [deezerRelatedSongs, setDeezerRelatedSongs] = useState<Song[]>([]);
-  const [currentDeezerIndex, setCurrentDeezerIndex] = useState(0);
-  const [likedSongs, setLikedSongs] = useState<Song[]>([]);
 
   useEffect(() => {
     if (!showPreferences && userPreferences) {
-      loadDeezerRelatedRecommendations();
+      loadRandomSong();
     }
   }, [showPreferences, userPreferences]);
 
@@ -144,16 +141,14 @@ const Index = () => {
 
   const handleLike = async (song: Song) => {
     console.log("Liked song:", song.name);
-
-    setLikedSongs(prev => [...prev, song]);
     // Here you would save the liked song to user's preferences
-    await loadNextDeezerRelated();
+    await loadRandomSong();
   };
 
   const handleDislike = async (song: Song) => {
     console.log("Disliked song:", song.name);
     // Here you would save the disliked song to user's preferences
-    await loadNextDeezerRelated();
+    await loadRandomSong();
   };
 
   const handlePreferencesComplete = (selectedArtists: Artist[]) => {
@@ -184,7 +179,7 @@ const Index = () => {
         <div className="text-center">
           <p className="text-destructive mb-4">{error}</p>
           <button 
-            onClick={loadDeezerRelatedRecommendations}
+            onClick={loadRandomSong}
             className="px-6 py-2 bg-gradient-primary text-music-text-primary rounded-lg font-semibold hover:opacity-90 transition-opacity"
           >
             Try Again
@@ -199,7 +194,7 @@ const Index = () => {
       {/* Header */}
       <header className="p-6 text-center">
         <h1 className="text-3xl font-bold text-music-text-primary mb-2">
-          Spofinder
+          Music Discovery
         </h1>
         <p className="text-music-text-secondary">
           Swipe right if you like it, left if you don't
