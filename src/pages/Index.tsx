@@ -20,10 +20,13 @@ const Index = () => {
   const [error, setError] = useState<string | null>(null);
   const [userPreferences, setUserPreferences] = useState<Artist[] | null>(null);
   const [showPreferences, setShowPreferences] = useState(true);
+  const [deezerRelatedSongs, setDeezerRelatedSongs] = useState<Song[]>([]);
+  const [currentDeezerIndex, setCurrentDeezerIndex] = useState(0);
+  const [likedSongs, setLikedSongs] = useState<Song[]>([]);
 
   useEffect(() => {
     if (!showPreferences && userPreferences) {
-      loadRandomSong();
+      loadDeezerRelatedRecommendations();
     }
   }, [showPreferences, userPreferences]);
 
@@ -106,49 +109,32 @@ const Index = () => {
   };
   
   const loadRecommendationsFromLiked = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      if (likedSongs.length === 0) {
-        await loadDeezerRelatedRecommendations();
-        return;
-      }
-      const deezerService = DeezerService.getInstance();
-      const allSongs: Song[] = [];
-      console.log('Loading recommendations based on liked songs...');
-      for (const likedSong of likedSongs) {
-        console.log(`Getting recommendations based on: ${likedSong.name}`);
-        const { tracks } = await deezerService.getTrackRecommendations({ trackName: likedSong.name, limit: 5 });
-        console.log(`Found ${tracks.length} recommended tracks`);
-        allSongs.push(...tracks);
-      }
-      if (allSongs.length === 0) {
-        setError("No se encontraron recomendaciones basadas en canciones que te gustaron");
-        return;
-      }
-      const shuffledSongs = allSongs.sort(() => Math.random() - 0.5);
-      console.log(`Loaded ${shuffledSongs.length} recommended songs based on liked songs`);
-      setDeezerRelatedSongs(shuffledSongs);
-      setCurrentDeezerIndex(0);
-      setCurrentSong(shuffledSongs[0]);
-    } catch (err) {
-      setError("Error al cargar recomendaciones basadas en canciones que te gustaron. Intenta de nuevo.");
-      console.error("Error loading recommendations from liked songs:", err);
-    } finally {
-      setLoading(false);
+    if (likedSongs.length === 0) return;
+
+    const deezerService = DeezerService.getInstance();
+    const allRecommendations: Song[] = [];
+
+    for (const liked of likedSongs) {
+      const { tracks } = await deezerService.getTrackRecommendations({ trackName: liked.name, limit: 5 });
+      allRecommendations.push(...tracks);
     }
+
+    console.log("All recommendations from liked songs:", allRecommendations);
+    // Aquí puedes actualizar estado para mostrarlas en UI si quieres
   };
 
   const handleLike = async (song: Song) => {
     console.log("Liked song:", song.name);
+
+    setLikedSongs(prev => [...prev, song]);
     // Here you would save the liked song to user's preferences
-    await loadRandomSong();
+    await loadNextDeezerRelated();
   };
 
   const handleDislike = async (song: Song) => {
     console.log("Disliked song:", song.name);
     // Here you would save the disliked song to user's preferences
-    await loadRandomSong();
+    await loadNextDeezerRelated();
   };
 
   const handlePreferencesComplete = (selectedArtists: Artist[]) => {
@@ -179,7 +165,7 @@ const Index = () => {
         <div className="text-center">
           <p className="text-destructive mb-4">{error}</p>
           <button 
-            onClick={loadRandomSong}
+            onClick={loadDeezerRelatedRecommendations}
             className="px-6 py-2 bg-gradient-primary text-music-text-primary rounded-lg font-semibold hover:opacity-90 transition-opacity"
           >
             Try Again
@@ -194,7 +180,7 @@ const Index = () => {
       {/* Header */}
       <header className="p-6 text-center">
         <h1 className="text-3xl font-bold text-music-text-primary mb-2">
-          Music Discovery
+          Spofinder
         </h1>
         <p className="text-music-text-secondary">
           Swipe right if you like it, left if you don't
