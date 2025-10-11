@@ -109,18 +109,37 @@ const Index = () => {
   };
   
   const loadRecommendationsFromLiked = async () => {
-    if (likedSongs.length === 0) return;
-
-    const deezerService = DeezerService.getInstance();
-    const allRecommendations: Song[] = [];
-
-    for (const liked of likedSongs) {
-      const { tracks } = await deezerService.getTrackRecommendations({ trackName: liked.name, limit: 5 });
-      allRecommendations.push(...tracks);
+    try {
+      setLoading(true);
+      setError(null);
+      if (likedSongs.length === 0) {
+        await loadDeezerRelatedRecommendations();
+        return;
+      }
+      const deezerService = DeezerService.getInstance();
+      const allSongs: Song[] = [];
+      console.log('Loading recommendations based on liked songs...');
+      for (const likedSong of likedSongs) {
+        console.log(`Getting recommendations based on: ${likedSong.name}`);
+        const { tracks } = await deezerService.getTrackRecommendations({ trackName: likedSong.name, limit: 5 });
+        console.log(`Found ${tracks.length} recommended tracks`);
+        allSongs.push(...tracks);
+      }
+      if (allSongs.length === 0) {
+        setError("No se encontraron recomendaciones basadas en canciones que te gustaron");
+        return;
+      }
+      const shuffledSongs = allSongs.sort(() => Math.random() - 0.5);
+      console.log(`Loaded ${shuffledSongs.length} recommended songs based on liked songs`);
+      setDeezerRelatedSongs(shuffledSongs);
+      setCurrentDeezerIndex(0);
+      setCurrentSong(shuffledSongs[0]);
+    } catch (err) {
+      setError("Error al cargar recomendaciones basadas en canciones que te gustaron. Intenta de nuevo.");
+      console.error("Error loading recommendations from liked songs:", err);
+    } finally {
+      setLoading(false);
     }
-
-    console.log("All recommendations from liked songs:", allRecommendations);
-    // Aquí puedes actualizar estado para mostrarlas en UI si quieres
   };
 
   const handleLike = async (song: Song) => {
